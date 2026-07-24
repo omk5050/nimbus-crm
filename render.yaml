@@ -7,7 +7,7 @@ services:
     env: node
     plan: free
     buildCommand: npm run build:render
-    startCommand: npm --prefix backend run db:push && npm start
+    startCommand: npm --prefix backend run db:push && npm --prefix backend run db:seed && npm start
     envVars:
       - key: NODE_ENV
         value: production

@@ -65,7 +65,7 @@ async function main() {
     });
     employees.push(emp);
   }
-  console.log(`✅ Employees: ${employees.length} created`);
+  console.log(`✅ Employees: ${employees.length} ready`);
 
   // ─── Users (auth accounts for each employee) ──────────────────
   const PASSWORD = await bcrypt.hash('Password123!', 12);
@@ -75,7 +75,7 @@ async function main() {
     const emp = employees[i];
     await prisma.user.upsert({
       where: { employeeId: emp.id },
-      update: {},
+      update: { passwordHash: PASSWORD },
       create: {
         employeeId: emp.id,
         passwordHash: PASSWORD,
@@ -84,113 +84,131 @@ async function main() {
       },
     });
   }
-  console.log(`✅ Users: ${employees.length} accounts created (password: Password123!)`);
+  console.log(`✅ Users: ${employees.length} accounts ready (password: Password123!)`);
 
-  // ─── Customers ────────────────────────────────────────────────
-  const customerNames = [
-    ['Harlan Ortiz', 'Meridian Foods', 'harlan@meridianfoods.com', 'active', 'Food & Beverage'],
-    ['Sophie Turner', 'Bluewave Logistics', 'sophie@bluewave.com', 'active', 'Logistics'],
-    ['Derek Mills', 'Cedar & Co.', 'derek@cedarco.com', 'prospect', 'Retail'],
-    ['Elena Vasquez', 'Fernwood Analytics', 'elena@fernwood.com', 'active', 'Technology'],
-    ['Omar Farooq', 'Skyline Retail Co.', 'omar@skylineretail.com', 'inactive', 'Retail'],
-  ];
+  // ─── Customers (create if empty) ─────────────────────────────
+  const existingCustCount = await prisma.customer.count();
+  let customers: any[] = [];
 
-  const customers = [];
-  for (const [name, co, email, status, industry] of customerNames) {
-    const cust = await prisma.customer.create({
-      data: {
-        companyId: company.id,
-        name,
-        company: co,
-        email,
-        phone: '+1 (555) 100-0000',
-        status: status as any,
-        industry: (industry.includes('Logistics') ? 'Logistics' : industry.includes('Retail') ? 'Retail' : 'Technology') as any,
-        owner: employees[0].name,
-        address: '123 Main St, Anytown, USA',
-        lifetimeValue: Math.floor(Math.random() * 200000),
-        tags: ['enterprise', 'priority'],
-      },
-    });
-    customers.push(cust);
-  }
-  console.log(`✅ Customers: ${customers.length} created`);
+  if (existingCustCount === 0) {
+    const customerNames = [
+      ['Harlan Ortiz', 'Meridian Foods', 'harlan@meridianfoods.com', 'active', 'Retail'],
+      ['Sophie Turner', 'Bluewave Logistics', 'sophie@bluewave.com', 'active', 'Logistics'],
+      ['Derek Mills', 'Cedar & Co.', 'derek@cedarco.com', 'prospect', 'Retail'],
+      ['Elena Vasquez', 'Fernwood Analytics', 'elena@fernwood.com', 'active', 'Technology'],
+      ['Omar Farooq', 'Skyline Retail Co.', 'omar@skylineretail.com', 'inactive', 'Retail'],
+    ];
 
-  // ─── Leads ────────────────────────────────────────────────────
-  const leadStages = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'] as const;
-  const leadSources = ['Website', 'Referral', 'Cold_Outreach', 'Social_Media', 'Partner'] as const;
-
-  for (let i = 0; i < 8; i++) {
-    await prisma.lead.create({
-      data: {
-        companyId: company.id,
-        name: `Lead Contact ${i + 1}`,
-        company: `Prospect Corp ${i + 1}`,
-        email: `lead${i + 1}@prospect${i + 1}.com`,
-        phone: '+1 (555) 200-0000',
-        stage: leadStages[i % leadStages.length],
-        source: leadSources[i % leadSources.length],
-        owner: employees[i % employees.length].name,
-        value: (i + 1) * 12500,
-        activity: {
-          create: { type: 'created', description: `Lead captured from ${leadSources[i % leadSources.length]}`, actor: employees[0].name },
+    for (const [name, co, email, status, industry] of customerNames) {
+      const cust = await prisma.customer.create({
+        data: {
+          companyId: company.id,
+          name,
+          company: co,
+          email,
+          phone: '+1 (555) 100-0000',
+          status: status as any,
+          industry: (industry.includes('Logistics') ? 'Logistics' : industry.includes('Retail') ? 'Retail' : 'Technology') as any,
+          owner: employees[0].name,
+          address: '123 Main St, Anytown, USA',
+          lifetimeValue: Math.floor(Math.random() * 200000),
+          tags: ['enterprise', 'priority'],
         },
-      },
-    });
+      });
+      customers.push(cust);
+    }
+    console.log(`✅ Customers: ${customers.length} created`);
+  } else {
+    customers = await prisma.customer.findMany({ take: 5 });
   }
-  console.log(`✅ Leads: 8 created`);
 
-  // ─── Deals ────────────────────────────────────────────────────
-  const dealStages = ['qualifying', 'proposal', 'negotiation', 'won', 'lost'] as const;
-  for (let i = 0; i < 5; i++) {
-    await prisma.deal.create({
-      data: {
-        companyId: company.id,
-        title: `Deal ${i + 1} — ${customers[i % customers.length].company}`,
-        customerId: customers[i % customers.length].id,
-        customerName: customers[i % customers.length].name,
-        company: customers[i % customers.length].company,
-        stage: dealStages[i % dealStages.length],
-        value: (i + 1) * 25000,
-        owner: employees[i % employees.length].name,
-        expectedCloseDate: new Date(Date.now() + (i + 1) * 30 * 86400000),
-      },
-    });
+  // ─── Leads (create if empty) ──────────────────────────────────
+  const existingLeadCount = await prisma.lead.count();
+  if (existingLeadCount === 0) {
+    const leadStages = ['new', 'contacted', 'qualified', 'proposal', 'won', 'lost'] as const;
+    const leadSources = ['Website', 'Referral', 'Cold_Outreach', 'Social_Media', 'Partner'] as const;
+
+    for (let i = 0; i < 8; i++) {
+      await prisma.lead.create({
+        data: {
+          companyId: company.id,
+          name: `Lead Contact ${i + 1}`,
+          company: `Prospect Corp ${i + 1}`,
+          email: `lead${i + 1}@prospect${i + 1}.com`,
+          phone: '+1 (555) 200-0000',
+          stage: leadStages[i % leadStages.length],
+          source: leadSources[i % leadSources.length],
+          owner: employees[i % employees.length].name,
+          value: (i + 1) * 12500,
+          activity: {
+            create: { type: 'created', description: `Lead captured from ${leadSources[i % leadSources.length]}`, actor: employees[0].name },
+          },
+        },
+      });
+    }
+    console.log(`✅ Leads: 8 created`);
   }
-  console.log(`✅ Deals: 5 created`);
 
-  // ─── Tasks ────────────────────────────────────────────────────
-  const taskStatuses = ['todo', 'in_progress', 'in_review', 'done'] as const;
-  const taskPriorities = ['low', 'medium', 'high'] as const;
-
-  for (let i = 0; i < 6; i++) {
-    await prisma.task.create({
-      data: {
-        companyId: company.id,
-        title: `Task ${i + 1}: Follow up on ${customers[i % customers.length].company}`,
-        description: `Review the account and send follow-up email to ${customers[i % customers.length].name}.`,
-        assignee: employees[i % employees.length].name,
-        relatedTo: customers[i % customers.length].company,
-        dueDate: new Date(Date.now() + (i + 1) * 7 * 86400000),
-        priority: taskPriorities[i % taskPriorities.length],
-        status: taskStatuses[i % taskStatuses.length],
-      },
-    });
+  // ─── Deals (create if empty) ──────────────────────────────────
+  const existingDealCount = await prisma.deal.count();
+  if (existingDealCount === 0 && customers.length > 0) {
+    const dealStages = ['qualifying', 'proposal', 'negotiation', 'won', 'lost'] as const;
+    for (let i = 0; i < 5; i++) {
+      await prisma.deal.create({
+        data: {
+          companyId: company.id,
+          title: `Deal ${i + 1} — ${customers[i % customers.length].company}`,
+          customerId: customers[i % customers.length].id,
+          customerName: customers[i % customers.length].name,
+          company: customers[i % customers.length].company,
+          stage: dealStages[i % dealStages.length],
+          value: (i + 1) * 25000,
+          owner: employees[i % employees.length].name,
+          expectedCloseDate: new Date(Date.now() + (i + 1) * 30 * 86400000),
+        },
+      });
+    }
+    console.log(`✅ Deals: 5 created`);
   }
-  console.log(`✅ Tasks: 6 created`);
 
-  // ─── Notifications ────────────────────────────────────────────
+  // ─── Tasks (create if empty) ──────────────────────────────────
+  const existingTaskCount = await prisma.task.count();
+  if (existingTaskCount === 0 && customers.length > 0) {
+    const taskStatuses = ['todo', 'in_progress', 'in_review', 'done'] as const;
+    const taskPriorities = ['low', 'medium', 'high'] as const;
+
+    for (let i = 0; i < 6; i++) {
+      await prisma.task.create({
+        data: {
+          companyId: company.id,
+          title: `Task ${i + 1}: Follow up on ${customers[i % customers.length].company}`,
+          description: `Review the account and send follow-up email to ${customers[i % customers.length].name}.`,
+          assignee: employees[i % employees.length].name,
+          relatedTo: customers[i % customers.length].company,
+          dueDate: new Date(Date.now() + (i + 1) * 7 * 86400000),
+          priority: taskPriorities[i % taskPriorities.length],
+          status: taskStatuses[i % taskStatuses.length],
+        },
+      });
+    }
+    console.log(`✅ Tasks: 6 created`);
+  }
+
+  // ─── Notifications (create if empty) ──────────────────────────
   const adminUser = await prisma.user.findUnique({ where: { employeeId: employees[0].id } });
   if (adminUser) {
-    await prisma.notification.createMany({
-      data: [
-        { userId: adminUser.id, type: 'lead', title: 'New lead assigned', description: 'Lead Contact 1 from Website was assigned to you', isRead: false, link: '/leads' },
-        { userId: adminUser.id, type: 'deal', title: 'Deal moved to Negotiation', description: 'Deal 3 moved to Negotiation stage', isRead: false, link: '/sales' },
-        { userId: adminUser.id, type: 'task', title: 'Task due today', description: 'Task 1 is due today', isRead: true, link: '/tasks' },
-        { userId: adminUser.id, type: 'system', title: 'Welcome to Nimbus CRM', description: 'Your workspace has been set up and seeded with demo data', isRead: false },
-      ],
-    });
-    console.log(`✅ Notifications: 4 created`);
+    const notifCount = await prisma.notification.count({ where: { userId: adminUser.id } });
+    if (notifCount === 0) {
+      await prisma.notification.createMany({
+        data: [
+          { userId: adminUser.id, type: 'lead', title: 'New lead assigned', description: 'Lead Contact 1 from Website was assigned to you', isRead: false, link: '/leads' },
+          { userId: adminUser.id, type: 'deal', title: 'Deal moved to Negotiation', description: 'Deal 3 moved to Negotiation stage', isRead: false, link: '/sales' },
+          { userId: adminUser.id, type: 'task', title: 'Task due today', description: 'Task 1 is due today', isRead: true, link: '/tasks' },
+          { userId: adminUser.id, type: 'system', title: 'Welcome to Nimbus CRM', description: 'Your workspace has been set up and seeded with demo data', isRead: false },
+        ],
+      });
+      console.log(`✅ Notifications: 4 created`);
+    }
   }
 
   console.log('\n🎉 Seeding complete!');
