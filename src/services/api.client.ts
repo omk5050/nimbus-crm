@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuthStore } from '@/store/auth.store';
 
 /**
  * Enterprise API Client with smart base URL fallback for single-link Render deployment.
@@ -27,6 +28,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('nimbus_access_token');
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   },

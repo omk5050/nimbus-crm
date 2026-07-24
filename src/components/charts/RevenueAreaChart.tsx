@@ -13,14 +13,16 @@ const PADDING_X = 8;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 28;
 
-/**
- * Renders a gradient-filled revenue trend line as raw SVG, scaled entirely in
- * percentages so it stays responsive without a resize observer. The final
- * point renders as a dashed projection when `isProjected` is set (the
- * current, still-in-progress month).
- */
 export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
   const [hovered, setHovered] = useState<number | null>(null);
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-full min-h-[180px] w-full items-center justify-center text-sm text-muted-foreground">
+        No revenue data recorded yet.
+      </div>
+    );
+  }
 
   const values = data.map((point) => point.revenue);
   const max = Math.max(...values);
@@ -29,7 +31,7 @@ export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
   const chartHeight = VIEW_HEIGHT - PADDING_TOP - PADDING_BOTTOM;
 
   const points = data.map((point, index) => {
-    const x = PADDING_X + (index / (data.length - 1)) * chartWidth;
+    const x = PADDING_X + (index / Math.max(1, data.length - 1)) * chartWidth;
     const ratio = max === min ? 0 : (point.revenue - min) / (max - min);
     const y = PADDING_TOP + (1 - ratio) * chartHeight;
     return { x, y, point };
@@ -40,7 +42,9 @@ export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
     .join(' ');
 
   const baselineY = PADDING_TOP + chartHeight;
-  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${baselineY} L ${points[0].x.toFixed(1)} ${baselineY} Z`;
+  const lastPointX = points[points.length - 1]?.x ?? PADDING_X;
+  const firstPointX = points[0]?.x ?? PADDING_X;
+  const areaPath = `${linePath} L ${lastPointX.toFixed(1)} ${baselineY} L ${firstPointX.toFixed(1)} ${baselineY} Z`;
 
   const gridLines = [0, 0.25, 0.5, 0.75, 1];
 
@@ -51,7 +55,7 @@ export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
         className="h-full w-full"
         preserveAspectRatio="none"
         role="img"
-        aria-label="Revenue trend over the last 7 months"
+        aria-label="Revenue trend over time"
       >
         <defs>
           <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
@@ -114,7 +118,6 @@ export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
               animate={{ scale: 1 }}
               transition={{ duration: 0.25, delay: 0.7 + index * 0.05 }}
             />
-            {/* Generous invisible hit target so the tooltip is easy to trigger */}
             <circle
               cx={x}
               cy={y}
@@ -136,7 +139,7 @@ export function RevenueAreaChart({ data }: RevenueAreaChartProps) {
         ))}
       </svg>
 
-      {hovered !== null && (
+      {hovered !== null && points[hovered] && (
         <div
           className="pointer-events-none absolute -translate-x-1/2 -translate-y-full rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md"
           style={{

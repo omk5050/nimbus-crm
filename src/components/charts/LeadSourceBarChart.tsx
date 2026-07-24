@@ -5,11 +5,18 @@ interface LeadSourceBarChartProps {
   data: LeadSourceBreakdown[];
 }
 
-/** Horizontal bars, longest first, each animating in from zero width on mount. */
 export function LeadSourceBarChart({ data }: LeadSourceBarChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-full min-h-[180px] w-full items-center justify-center text-sm text-muted-foreground">
+        No lead sources recorded yet.
+      </div>
+    );
+  }
+
   const sorted = [...data].sort((a, b) => b.count - a.count);
-  const max = Math.max(...sorted.map((row) => row.count));
-  const total = sorted.reduce((sum, row) => sum + row.count, 0);
+  const max = Math.max(1, ...sorted.map((row) => row.count));
+  const total = Math.max(1, sorted.reduce((sum, row) => sum + row.count, 0));
 
   return (
     <div className="flex h-full flex-col justify-center gap-4">

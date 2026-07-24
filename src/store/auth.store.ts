@@ -13,10 +13,12 @@ interface AuthState {
   fetchMe: () => Promise<void>;
 }
 
+const hasToken = () => Boolean(typeof window !== 'undefined' && localStorage.getItem('nimbus_access_token'));
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: false,
+      isAuthenticated: hasToken(),
       user: null,
       isSubmitting: false,
 
@@ -55,6 +57,15 @@ export const useAuthStore = create<AuthState>()(
         }
       },
     }),
-    { name: 'nimbus-auth' },
+    {
+      name: 'nimbus-auth',
+      onRehydrateStorage: () => (state) => {
+        // Double check token existence after rehydration from localStorage
+        if (state && !localStorage.getItem('nimbus_access_token')) {
+          state.isAuthenticated = false;
+          state.user = null;
+        }
+      },
+    },
   ),
 );

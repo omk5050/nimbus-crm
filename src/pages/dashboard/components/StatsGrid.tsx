@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { Briefcase, DollarSign, Target, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StatCard } from '@/components/cards/StatCard';
-import { MOCK_DASHBOARD_STATS } from '@/mock/dashboard.mock';
 import { useCustomersStore } from '@/store/customers.store';
 import { useLeadsStore } from '@/store/leads.store';
 import { useSalesStore } from '@/store/sales.store';
@@ -17,13 +16,13 @@ const STAT_ICONS: Record<DashboardStatId, LucideIcon> = {
   activeCustomers: Users,
 };
 
-/**
- * Every value here is derived live from the real feature stores so the grid
- * reflects whatever the user has actually added or changed — Revenue from
- * completed Payments, New Leads/Open Deals from Leads/Deals, Active
- * Customers from Customers. Only the trend deltas ("+12.4% vs last month")
- * stay on the mock, since there's no historical snapshot to diff against.
- */
+const DASHBOARD_STATS_CONFIG: Array<{ id: DashboardStatId; label: string; trend?: { value: number; label: string } }> = [
+  { id: 'revenue', label: 'Total Revenue', trend: { value: 12.4, label: 'vs last month' } },
+  { id: 'newLeads', label: 'New Leads', trend: { value: 8.2, label: 'vs last month' } },
+  { id: 'openDeals', label: 'Open Deals', trend: { value: -3.1, label: 'vs last month' } },
+  { id: 'activeCustomers', label: 'Active Customers', trend: { value: 5.6, label: 'vs last month' } },
+];
+
 export function StatsGrid() {
   const leads = useLeadsStore((state) => state.leads);
   const customers = useCustomersStore((state) => state.customers);
@@ -31,10 +30,10 @@ export function StatsGrid() {
   const payments = useSalesStore((state) => state.payments);
 
   const liveValues = useMemo<Record<DashboardStatId, string>>(() => {
-    const newLeadsCount = leads.filter((lead) => lead.stage === 'new').length;
-    const openDealsCount = deals.filter((deal) => deal.stage !== 'won' && deal.stage !== 'lost').length;
-    const activeCustomersCount = customers.filter((customer) => customer.status === 'active').length;
-    const totalRevenue = payments
+    const newLeadsCount = (leads || []).filter((lead) => lead.stage === 'new').length;
+    const openDealsCount = (deals || []).filter((deal) => deal.stage !== 'won' && deal.stage !== 'lost').length;
+    const activeCustomersCount = (customers || []).filter((customer) => customer.status === 'active').length;
+    const totalRevenue = (payments || [])
       .filter((payment) => payment.status === 'completed')
       .reduce((sum, payment) => sum + payment.amount, 0);
 
@@ -48,7 +47,7 @@ export function StatsGrid() {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {MOCK_DASHBOARD_STATS.map((stat, index) => (
+      {DASHBOARD_STATS_CONFIG.map((stat, index) => (
         <motion.div
           key={stat.id}
           initial={{ opacity: 0, y: 8 }}
