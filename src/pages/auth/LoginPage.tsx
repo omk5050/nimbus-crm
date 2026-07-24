@@ -42,8 +42,12 @@ export default function LoginPage() {
       const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? ROUTES.DASHBOARD;
       navigate(redirectTo, { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Invalid email or password. Please check your credentials and try again.';
-      setErrorMessage(msg);
+      if (!err?.response) {
+        setErrorMessage('Server is waking up or deploying on Render. Please wait 10-15 seconds and try clicking Sign In again.');
+      } else {
+        const msg = err.response.data?.message || 'Invalid email or password. Please check your credentials and try again.';
+        setErrorMessage(msg);
+      }
     }
   }
 
