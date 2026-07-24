@@ -26,10 +26,13 @@ export const useAuthStore = create<AuthState>()(
         set({ isSubmitting: true });
         try {
           const res = await apiClient.post('/auth/login', values);
-          const { user, tokens } = res.data;
-          if (tokens?.accessToken) {
-            localStorage.setItem('nimbus_access_token', tokens.accessToken);
+          const { user, accessToken, tokens } = res.data;
+          const token = accessToken || tokens?.accessToken;
+
+          if (token) {
+            localStorage.setItem('nimbus_access_token', token);
           }
+
           set({ isAuthenticated: true, user, isSubmitting: false });
         } catch (error) {
           set({ isSubmitting: false });
@@ -60,7 +63,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'nimbus-auth',
       onRehydrateStorage: () => (state) => {
-        // Double check token existence after rehydration from localStorage
         if (state && !localStorage.getItem('nimbus_access_token')) {
           state.isAuthenticated = false;
           state.user = null;
