@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -192,7 +192,7 @@ enum PermissionAction {
 // ─────────────────────────────────────────────────────────────
 
 model Company {
-  id        String      @id @default(uuid())
+  id        String      @id @default(uuid()) @map("_id")
   name      String
   plan      CompanyPlan @default(starter)
   industry  String      @default("")
@@ -206,6 +206,10 @@ model Company {
   customers Customer[]
   leads     Lead[]
   tasks     Task[]
+  deals     Deal[]
+  quotations Quotation[]
+  invoices  Invoice[]
+  payments  Payment[]
 
   @@map("companies")
 }
@@ -215,7 +219,7 @@ model Company {
 // ─────────────────────────────────────────────────────────────
 
 model Employee {
-  id           String         @id @default(uuid())
+  id           String         @id @default(uuid()) @map("_id")
   companyId    String
   name         String
   email        String         @unique
@@ -237,7 +241,7 @@ model Employee {
 }
 
 model User {
-  id                  String    @id @default(uuid())
+  id                  String    @id @default(uuid()) @map("_id")
   employeeId          String    @unique
   passwordHash        String
   role                UserRole  @default(sales_rep)
@@ -256,7 +260,7 @@ model User {
 }
 
 model AttendanceRecord {
-  id         String           @id @default(uuid())
+  id         String           @id @default(uuid()) @map("_id")
   employeeId String
   date       String           // ISO date string YYYY-MM-DD
   status     AttendanceStatus @default(present)
@@ -270,7 +274,7 @@ model AttendanceRecord {
 }
 
 model PerformanceMetric {
-  id              String   @id @default(uuid())
+  id              String   @id @default(uuid()) @map("_id")
   employeeId      String   @unique
   score           Int      @default(70)
   dealsClosed     Int      @default(0)
@@ -288,7 +292,7 @@ model PerformanceMetric {
 // ─────────────────────────────────────────────────────────────
 
 model Customer {
-  id            String           @id @default(uuid())
+  id            String           @id @default(uuid()) @map("_id")
   companyId     String
   name          String
   company       String
@@ -315,7 +319,7 @@ model Customer {
 }
 
 model CustomerNote {
-  id         String   @id @default(uuid())
+  id         String   @id @default(uuid()) @map("_id")
   customerId String
   author     String
   content    String
@@ -327,7 +331,7 @@ model CustomerNote {
 }
 
 model CustomerFile {
-  id          String           @id @default(uuid())
+  id          String           @id @default(uuid()) @map("_id")
   customerId  String
   fileName    String
   fileType    CustomerFileType @default(other)
@@ -342,7 +346,7 @@ model CustomerFile {
 }
 
 model CustomerTimelineEvent {
-  id          String                    @id @default(uuid())
+  id          String                    @id @default(uuid()) @map("_id")
   customerId  String
   type        CustomerTimelineEventType
   description String
@@ -359,7 +363,7 @@ model CustomerTimelineEvent {
 // ─────────────────────────────────────────────────────────────
 
 model Lead {
-  id                String          @id @default(uuid())
+  id                String          @id @default(uuid()) @map("_id")
   companyId         String
   name              String
   company           String
@@ -380,7 +384,7 @@ model Lead {
 }
 
 model LeadActivity {
-  id          String          @id @default(uuid())
+  id          String          @id @default(uuid()) @map("_id")
   leadId      String
   type        LeadActivityType
   description String
@@ -397,7 +401,7 @@ model LeadActivity {
 // ─────────────────────────────────────────────────────────────
 
 model Deal {
-  id                String    @id @default(uuid())
+  id                String    @id @default(uuid()) @map("_id")
   companyId         String
   title             String
   customerId        String
@@ -417,7 +421,7 @@ model Deal {
 }
 
 model Quotation {
-  id           String          @id @default(uuid())
+  id           String          @id @default(uuid()) @map("_id")
   companyId    String
   quoteNumber  String          @unique
   dealId       String?
@@ -438,7 +442,7 @@ model Quotation {
 }
 
 model QuotationItem {
-  id          String @id @default(uuid())
+  id          String @id @default(uuid()) @map("_id")
   quotationId String
   description String
   quantity    Float  @default(1)
@@ -450,7 +454,7 @@ model QuotationItem {
 }
 
 model Invoice {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @map("_id")
   companyId     String
   invoiceNumber String        @unique
   dealId        String?
@@ -473,7 +477,7 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String @id @default(uuid())
+  id          String @id @default(uuid()) @map("_id")
   invoiceId   String
   description String
   quantity    Float  @default(1)
@@ -485,7 +489,7 @@ model InvoiceItem {
 }
 
 model Payment {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @map("_id")
   companyId     String
   invoiceId     String
   invoiceNumber String
@@ -507,7 +511,7 @@ model Payment {
 // ─────────────────────────────────────────────────────────────
 
 model Task {
-  id          String       @id @default(uuid())
+  id          String       @id @default(uuid()) @map("_id")
   companyId   String
   title       String
   description String?
@@ -529,7 +533,7 @@ model Task {
 // ─────────────────────────────────────────────────────────────
 
 model Notification {
-  id          String           @id @default(uuid())
+  id          String           @id @default(uuid()) @map("_id")
   userId      String
   type        NotificationType
   title       String
@@ -548,7 +552,7 @@ model Notification {
 // ─────────────────────────────────────────────────────────────
 
 model RolePermission {
-  id       String           @id @default(uuid())
+  id       String           @id @default(uuid()) @map("_id")
   companyId String
   role     UserRole
   module   PermissionModule
@@ -560,7 +564,7 @@ model RolePermission {
 }
 
 model UserPreference {
-  id                  String  @id @default(uuid())
+  id                  String  @id @default(uuid()) @map("_id")
   userId              String  @unique
   emailNotifications  Boolean @default(true)
   taskReminders       Boolean @default(true)
