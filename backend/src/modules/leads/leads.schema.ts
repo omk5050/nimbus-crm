@@ -4,12 +4,15 @@ export const leadSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   company: z.string().min(1, 'Company is required'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().default(''),
+  phone: z.string().optional().default(''),
   stage: z.enum(['new', 'contacted', 'qualified', 'proposal', 'won', 'lost']).default('new'),
-  source: z.enum(['Website', 'Referral', 'Cold_Outreach', 'Social_Media', 'Partner']).default('Website'),
-  owner: z.string().default(''),
+  source: z.preprocess(
+    (val) => (typeof val === 'string' ? val.replace(' ', '_') : val),
+    z.enum(['Website', 'Referral', 'Cold_Outreach', 'Social_Media', 'Partner']).default('Website'),
+  ),
+  owner: z.string().optional().default(''),
   value: z.coerce.number().min(0).default(0),
-  expectedCloseDate: z.string().optional(),
+  expectedCloseDate: z.preprocess((val) => (val === '' ? undefined : val), z.string().optional()),
 });
 
 export const moveStageSchema = z.object({

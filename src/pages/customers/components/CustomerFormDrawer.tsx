@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Drawer } from '@/components/modals/Drawer';
 import { Button } from '@/components/buttons/Button';
 import { CustomerForm } from '@/components/forms/CustomerForm';
@@ -10,9 +11,7 @@ const FORM_ID = 'customer-form';
 interface CustomerFormDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Present in edit mode; omitted in create mode. */
   customer?: Customer;
-  /** Fired after a successful create, with the new record — lets the caller navigate to it. */
   onCreated?: (customer: Customer) => void;
 }
 
@@ -26,7 +25,7 @@ function toFormValues(customer: Customer): CustomerFormValues {
     industry: customer.industry,
     owner: customer.owner,
     address: customer.address,
-    tags: customer.tags.join(', '),
+    tags: Array.isArray(customer.tags) ? customer.tags.join(', ') : customer.tags || '',
   };
 }
 
@@ -34,17 +33,26 @@ export function CustomerFormDrawer({ isOpen, onClose, customer, onCreated }: Cus
   const addCustomer = useCustomersStore((state) => state.addCustomer);
   const updateCustomer = useCustomersStore((state) => state.updateCustomer);
   const isEditMode = Boolean(customer);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(values: CustomerFormValues) {
-    if (customer) {
-      updateCustomer(customer.id, values);
-      toast.success('Customer updated', { description: `${values.name}'s profile was saved.` });
-    } else {
-      const created = addCustomer(values);
-      toast.success('Customer added', { description: `${created.name} was added to your accounts.` });
-      onCreated?.(created);
+  async function handleSubmit(values: CustomerFormValues) {
+    setIsSubmitting(true);
+    try {
+      if (customer) {
+        await updateCustomer(customer.id, values);
+        toast.success('Customer updated', { description: `${values.name}'s profile was saved.` });
+      } else {
+        const created = await addCustomer(values);
+        toast.success('Customer added', { description: `${created.name} was added to your accounts.` });
+        onCreated?.(created);
+      }
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save customer';
+      toast.error('Error saving customer', { description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   }
 
   return (
@@ -56,10 +64,10 @@ export function CustomerFormDrawer({ isOpen, onClose, customer, onCreated }: Cus
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form={FORM_ID}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
             {isEditMode ? 'Save changes' : 'Add customer'}
           </Button>
         </>

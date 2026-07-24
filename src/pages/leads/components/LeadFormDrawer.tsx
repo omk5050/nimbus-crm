@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Drawer } from '@/components/modals/Drawer';
 import { Button } from '@/components/buttons/Button';
 import { LeadForm } from '@/components/forms/LeadForm';
@@ -10,9 +11,7 @@ const FORM_ID = 'lead-form';
 interface LeadFormDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Present in edit mode; omitted in create mode. */
   lead?: Lead;
-  /** Fired after a successful create, with the new record — lets the caller navigate to it. */
   onCreated?: (lead: Lead) => void;
 }
 
@@ -34,17 +33,26 @@ export function LeadFormDrawer({ isOpen, onClose, lead, onCreated }: LeadFormDra
   const addLead = useLeadsStore((state) => state.addLead);
   const updateLead = useLeadsStore((state) => state.updateLead);
   const isEditMode = Boolean(lead);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(values: LeadFormValues) {
-    if (lead) {
-      updateLead(lead.id, values);
-      toast.success('Lead updated', { description: `${values.name}'s details were saved.` });
-    } else {
-      const created = addLead(values);
-      toast.success('Lead added', { description: `${created.name} was added to your pipeline.` });
-      onCreated?.(created);
+  async function handleSubmit(values: LeadFormValues) {
+    setIsSubmitting(true);
+    try {
+      if (lead) {
+        await updateLead(lead.id, values);
+        toast.success('Lead updated', { description: `${values.name}'s details were saved.` });
+      } else {
+        const created = await addLead(values);
+        toast.success('Lead added', { description: `${created.name} was added to your pipeline.` });
+        onCreated?.(created);
+      }
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save lead';
+      toast.error('Error saving lead', { description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   }
 
   return (
@@ -56,10 +64,10 @@ export function LeadFormDrawer({ isOpen, onClose, lead, onCreated }: LeadFormDra
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form={FORM_ID}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
             {isEditMode ? 'Save changes' : 'Add lead'}
           </Button>
         </>

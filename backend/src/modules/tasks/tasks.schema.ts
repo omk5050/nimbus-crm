@@ -3,15 +3,21 @@ import { z } from 'zod';
 export const taskSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  assignee: z.string().default(''),
+  assignee: z.string().optional().default(''),
   relatedTo: z.string().optional(),
   dueDate: z.string().min(1, 'Due date is required'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  status: z.enum(['todo', 'in_progress', 'in_review', 'done']).default('todo'),
+  status: z.preprocess(
+    (val) => (typeof val === 'string' ? val.replace('-', '_') : val),
+    z.enum(['todo', 'in_progress', 'in_review', 'done']).default('todo'),
+  ),
 });
 
 export const moveStatusSchema = z.object({
-  status: z.enum(['todo', 'in_progress', 'in_review', 'done']),
+  status: z.preprocess(
+    (val) => (typeof val === 'string' ? val.replace('-', '_') : val),
+    z.enum(['todo', 'in_progress', 'in_review', 'done']),
+  ),
 });
 
 export const taskListQuerySchema = z.object({

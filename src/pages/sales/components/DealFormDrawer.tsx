@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Drawer } from '@/components/modals/Drawer';
 import { Button } from '@/components/buttons/Button';
 import { DealForm } from '@/components/forms/DealForm';
@@ -29,17 +30,26 @@ export function DealFormDrawer({ isOpen, onClose, deal, onCreated }: DealFormDra
   const addDeal = useSalesStore((state) => state.addDeal);
   const updateDeal = useSalesStore((state) => state.updateDeal);
   const isEditMode = Boolean(deal);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(values: DealFormValues) {
-    if (deal) {
-      updateDeal(deal.id, values);
-      toast.success('Deal updated', { description: `${values.title} was saved.` });
-    } else {
-      const created = addDeal(values);
-      toast.success('Deal added', { description: `${created.title} was added to your pipeline.` });
-      onCreated?.(created);
+  async function handleSubmit(values: DealFormValues) {
+    setIsSubmitting(true);
+    try {
+      if (deal) {
+        await updateDeal(deal.id, values);
+        toast.success('Deal updated', { description: `${values.title} was saved.` });
+      } else {
+        const created = await addDeal(values);
+        toast.success('Deal added', { description: `${created.title} was added to your pipeline.` });
+        onCreated?.(created);
+      }
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save deal';
+      toast.error('Error saving deal', { description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   }
 
   return (
@@ -51,10 +61,10 @@ export function DealFormDrawer({ isOpen, onClose, deal, onCreated }: DealFormDra
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form={FORM_ID}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
             {isEditMode ? 'Save changes' : 'Add deal'}
           </Button>
         </>

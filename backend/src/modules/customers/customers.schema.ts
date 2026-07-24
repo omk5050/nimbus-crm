@@ -4,12 +4,12 @@ export const customerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   company: z.string().min(1, 'Company is required'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().default(''),
+  phone: z.string().optional().default(''),
   status: z.enum(['active', 'prospect', 'inactive']),
   industry: z.enum(['Technology', 'Retail', 'Manufacturing', 'Healthcare', 'Logistics', 'Finance', 'Hospitality', 'Education']),
-  owner: z.string().default(''),
-  address: z.string().default(''),
-  tags: z.string().default(''),
+  owner: z.string().optional().default(''),
+  address: z.string().optional().default(''),
+  tags: z.preprocess((val) => (Array.isArray(val) ? val.join(', ') : val ?? ''), z.string().default('')),
 });
 
 export const customerNoteSchema = z.object({

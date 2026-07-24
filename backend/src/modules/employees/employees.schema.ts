@@ -3,10 +3,13 @@ import { z } from 'zod';
 export const employeeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().default(''),
-  role: z.string().default(''),
+  phone: z.string().optional().default(''),
+  role: z.string().optional().default(''),
   department: z.enum(['Sales', 'Engineering', 'Marketing', 'Support', 'Finance', 'HR']),
-  status: z.enum(['active', 'on_leave', 'terminated']).default('active'),
+  status: z.preprocess(
+    (val) => (typeof val === 'string' ? val.replace('-', '_') : val),
+    z.enum(['active', 'on_leave', 'terminated']).default('active'),
+  ),
   hireDate: z.string().min(1, 'Hire date is required'),
   avatarColor: z.string().optional(),
 });

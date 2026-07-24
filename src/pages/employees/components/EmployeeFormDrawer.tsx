@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Drawer } from '@/components/modals/Drawer';
 import { Button } from '@/components/buttons/Button';
 import { EmployeeForm } from '@/components/forms/EmployeeForm';
@@ -30,17 +31,26 @@ export function EmployeeFormDrawer({ isOpen, onClose, employee, onCreated }: Emp
   const addEmployee = useEmployeesStore((state) => state.addEmployee);
   const updateEmployee = useEmployeesStore((state) => state.updateEmployee);
   const isEditMode = Boolean(employee);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(values: EmployeeFormValues) {
-    if (employee) {
-      updateEmployee(employee.id, values);
-      toast.success('Employee updated', { description: `${values.name}'s profile was saved.` });
-    } else {
-      const created = addEmployee(values);
-      toast.success('Employee added', { description: `${created.name} joined ${created.department}.` });
-      onCreated?.(created);
+  async function handleSubmit(values: EmployeeFormValues) {
+    setIsSubmitting(true);
+    try {
+      if (employee) {
+        await updateEmployee(employee.id, values);
+        toast.success('Employee updated', { description: `${values.name}'s profile was saved.` });
+      } else {
+        const created = await addEmployee(values);
+        toast.success('Employee added', { description: `${created.name} joined ${created.department}.` });
+        onCreated?.(created);
+      }
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save employee';
+      toast.error('Error saving employee', { description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   }
 
   return (
@@ -52,10 +62,10 @@ export function EmployeeFormDrawer({ isOpen, onClose, employee, onCreated }: Emp
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form={FORM_ID}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
             {isEditMode ? 'Save changes' : 'Add employee'}
           </Button>
         </>

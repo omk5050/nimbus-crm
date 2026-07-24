@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Drawer } from '@/components/modals/Drawer';
 import { Button } from '@/components/buttons/Button';
 import { TaskForm } from '@/components/forms/TaskForm';
@@ -30,17 +31,26 @@ export function TaskFormDrawer({ isOpen, onClose, task, onCreated }: TaskFormDra
   const addTask = useTasksStore((state) => state.addTask);
   const updateTask = useTasksStore((state) => state.updateTask);
   const isEditMode = Boolean(task);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(values: TaskFormValues) {
-    if (task) {
-      updateTask(task.id, values);
-      toast.success('Task updated', { description: `"${values.title}" was saved.` });
-    } else {
-      const created = addTask(values);
-      toast.success('Task added', { description: `"${created.title}" was added to your tasks.` });
-      onCreated?.(created);
+  async function handleSubmit(values: TaskFormValues) {
+    setIsSubmitting(true);
+    try {
+      if (task) {
+        await updateTask(task.id, values);
+        toast.success('Task updated', { description: `"${values.title}" was saved.` });
+      } else {
+        const created = await addTask(values);
+        toast.success('Task added', { description: `"${created.title}" was added to your tasks.` });
+        onCreated?.(created);
+      }
+      onClose();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save task';
+      toast.error('Error saving task', { description: msg });
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   }
 
   return (
@@ -52,10 +62,10 @@ export function TaskFormDrawer({ isOpen, onClose, task, onCreated }: TaskFormDra
       size="lg"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" form={FORM_ID}>
+          <Button type="submit" form={FORM_ID} isLoading={isSubmitting}>
             {isEditMode ? 'Save changes' : 'Add task'}
           </Button>
         </>
