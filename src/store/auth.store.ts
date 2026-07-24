@@ -42,21 +42,21 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('nimbus_access_token');
-        set({ isAuthenticated: false, user: null });
+        set({ isAuthenticated: false, user: null, isSubmitting: false });
       },
 
       fetchMe: async () => {
         try {
           const token = localStorage.getItem('nimbus_access_token');
           if (!token) {
-            set({ isAuthenticated: false, user: null });
+            set({ isAuthenticated: false, user: null, isSubmitting: false });
             return;
           }
           const res = await apiClient.get('/auth/me');
-          set({ isAuthenticated: true, user: res.data });
+          set({ isAuthenticated: true, user: res.data, isSubmitting: false });
         } catch {
           localStorage.removeItem('nimbus_access_token');
-          set({ isAuthenticated: false, user: null });
+          set({ isAuthenticated: false, user: null, isSubmitting: false });
         }
       },
     }),
@@ -66,6 +66,7 @@ export const useAuthStore = create<AuthState>()(
         if (state && !localStorage.getItem('nimbus_access_token')) {
           state.isAuthenticated = false;
           state.user = null;
+          state.isSubmitting = false;
         }
       },
     },
