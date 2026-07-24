@@ -40,8 +40,7 @@ export default function LoginPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Sign in to your workspace. Any email and password will do — this build runs on mock
-        data only.
+        Sign in with your database credentials (Demo: <code className="font-mono text-xs">jordan@nimbus.example.com</code> / <code className="font-mono text-xs">Password123!</code>).
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 flex flex-col gap-4">
