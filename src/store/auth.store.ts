@@ -1,43 +1,59 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AuthUser, LoginFormValues } from '@/types/auth.types';
-import { MOCK_CURRENT_USER } from '@/mock/user.mock';
+import { apiClient } from '@/services/api.client';
 
 interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
-  /** Set while a mock login/reset request is "in flight". */
   isSubmitting: boolean;
 
-  /**
-   * Mock login. Accepts any well-formed credentials and resolves after a
-   * short simulated delay — there is no backend yet, so nothing is actually
-   * verified. Swap the body of this function for a real POST /auth/login
-   * call (via src/services/api.client.ts) when the API exists; nothing
-   * calling `login()` elsewhere needs to change.
-   */
   login: (values: LoginFormValues) => Promise<void>;
   logout: () => void;
+  fetchMe: () => Promise<void>;
 }
-
-const MOCK_NETWORK_DELAY_MS = 600;
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      // Defaults to signed in so the dashboard is reviewable immediately.
-      // Flip to `false` to preview the auth pages / redirect flow.
-      isAuthenticated: true,
-      user: MOCK_CURRENT_USER,
+      isAuthenticated: false,
+      user: null,
       isSubmitting: false,
 
-      login: async (_values) => {
+      login: async (values) => {
         set({ isSubmitting: true });
-        await new Promise((resolve) => setTimeout(resolve, MOCK_NETWORK_DELAY_MS));
-        set({ isAuthenticated: true, user: MOCK_CURRENT_USER, isSubmitting: false });
+        try {
+          const res = await apiClient.post('/auth/login', values);
+          const { user, tokens } = res.data;
+          if (tokens?.accessToken) {
+            localStorage.setItem('nimbus_access_token', tokens.accessToken);
+          }
+          set({ isAuthenticated: true, user, isSubmitting: false });
+        } catch (error) {
+          set({ isSubmitting: false });
+          throw error;
+        }
       },
 
-      logout: () => set({ isAuthenticated: false, user: null }),
+      logout: () => {
+        localStorage.removeItem('nimbus_access_token');
+        set({ isAuthenticated: false, user: null });
+      },
+
+      fetchMe: async () => {
+        try {
+          const token = localStorage.getItem('nimbus_access_token');
+          if (!token) {
+            set({ isAuthenticated: false, user: null });
+            return;
+          }
+          const res = await apiClient.get('/auth/me');
+          set({ isAuthenticated: true, user: res.data });
+        } catch {
+          localStorage.removeItem('nimbus_access_token');
+          set({ isAuthenticated: false, user: null });
+        }
+      },
     }),
     { name: 'nimbus-auth' },
   ),

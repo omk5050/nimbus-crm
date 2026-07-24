@@ -24,4 +24,4 @@ services:
       - key: CORS_ORIGINS
         value: "*"
       - key: DATABASE_URL
-        value: mongodb+srv://crmadmin:crm1admin1@cluster0.xiigpmf.mongodb.net/crmDB?retryWrites=true&w=majority
+        sync: false

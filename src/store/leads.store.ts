@@ -1,136 +1,133 @@
 import { create } from 'zustand';
 import type { Lead, LeadActivity, LeadFormValues, LeadStage } from '@/types/lead.types';
-import { INITIAL_LEAD_ACTIVITY, MOCK_LEADS } from '@/mock/leads.mock';
-import { LEAD_STAGE_LABEL } from '@/constants/lead.constants';
-import { MOCK_CURRENT_USER } from '@/mock/user.mock';
-
-function generateId(): string {
-  return `lead_${crypto.randomUUID().slice(0, 8)}`;
-}
-
-function logActivity(
-  activityByLeadId: Record<string, LeadActivity[]>,
-  leadId: string,
-  entry: Omit<LeadActivity, 'id' | 'leadId' | 'createdAt'>,
-): Record<string, LeadActivity[]> {
-  const event: LeadActivity = {
-    id: `act_${leadId}_${Date.now()}`,
-    leadId,
-    createdAt: new Date().toISOString(),
-    ...entry,
-  };
-  return {
-    ...activityByLeadId,
-    [leadId]: [event, ...(activityByLeadId[leadId] ?? [])],
-  };
-}
+import { apiClient } from '@/services/api.client';
 
 interface LeadsState {
   leads: Lead[];
   activityByLeadId: Record<string, LeadActivity[]>;
+  isLoading: boolean;
 
-  addLead: (values: LeadFormValues) => Lead;
-  updateLead: (id: string, values: LeadFormValues) => void;
-  deleteLead: (id: string) => void;
-  /** Used by both the Kanban drag-drop and the detail page's stage stepper. */
-  moveStage: (id: string, stage: LeadStage) => void;
-  assignOwner: (id: string, owner: string) => void;
-  logNote: (leadId: string, content: string) => void;
+  fetchLeads: () => Promise<void>;
+  fetchLeadActivity: (id: string) => Promise<void>;
+  addLead: (values: LeadFormValues) => Promise<Lead>;
+  updateLead: (id: string, values: LeadFormValues) => Promise<void>;
+  deleteLead: (id: string) => Promise<void>;
+  moveStage: (id: string, stage: LeadStage) => Promise<void>;
+  assignOwner: (id: string, owner: string) => Promise<void>;
+  logNote: (leadId: string, content: string) => Promise<void>;
 }
 
-export const useLeadsStore = create<LeadsState>()((set) => ({
-  leads: MOCK_LEADS,
-  activityByLeadId: INITIAL_LEAD_ACTIVITY,
+export const useLeadsStore = create<LeadsState>()((set, get) => ({
+  leads: [],
+  activityByLeadId: {},
+  isLoading: false,
 
-  addLead: (values) => {
-    const newLead: Lead = {
-      id: generateId(),
-      ...values,
-      expectedCloseDate: values.expectedCloseDate || undefined,
-      createdAt: new Date().toISOString(),
-    };
+  fetchLeads: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/leads');
+      const data = res.data.data || res.data || [];
+      set({ leads: data, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchLeadActivity: async (id: string) => {
+    try {
+      const res = await apiClient.get(`/leads/${id}/activity`);
+      set((state) => ({
+        activityByLeadId: { ...state.activityByLeadId, [id]: res.data },
+      }));
+    } catch {
+      // Ignore
+    }
+  },
+
+  addLead: async (values) => {
+    const res = await apiClient.post('/leads', values);
+    const newLead: Lead = res.data;
 
     set((state) => ({
       leads: [newLead, ...state.leads],
-      activityByLeadId: logActivity(state.activityByLeadId, newLead.id, {
-        type: 'created',
-        description: `Lead captured from ${newLead.source}`,
-        actor: MOCK_CURRENT_USER.name,
-      }),
     }));
 
     return newLead;
   },
 
-  updateLead: (id, values) => {
+  updateLead: async (id, values) => {
+    const res = await apiClient.put(`/leads/${id}`, values);
+    const updated: Lead = res.data;
+
     set((state) => ({
-      leads: state.leads.map((lead) =>
-        lead.id === id
-          ? { ...lead, ...values, expectedCloseDate: values.expectedCloseDate || undefined }
-          : lead,
-      ),
-      activityByLeadId: logActivity(state.activityByLeadId, id, {
-        type: 'note',
-        description: 'Lead details updated',
-        actor: MOCK_CURRENT_USER.name,
-      }),
+      leads: state.leads.map((l) => (l.id === id ? updated : l)),
     }));
   },
 
-  deleteLead: (id) => {
-    set((state) => {
-      const nextActivity = { ...state.activityByLeadId };
-      delete nextActivity[id];
-      return {
-        leads: state.leads.filter((lead) => lead.id !== id),
-        activityByLeadId: nextActivity,
-      };
-    });
+  deleteLead: async (id) => {
+    await apiClient.delete(`/leads/${id}`);
+    set((state) => ({
+      leads: state.leads.filter((l) => l.id !== id),
+    }));
   },
 
-  moveStage: (id, stage) => {
-    set((state) => {
-      const lead = state.leads.find((entry) => entry.id === id);
-      if (!lead || lead.stage === stage) return state;
+  moveStage: async (id, stage) => {
+    const lead = get().leads.find((l) => l.id === id);
+    if (!lead) return;
+    const updatedLead = { ...lead, stage };
 
-      return {
-        leads: state.leads.map((entry) => (entry.id === id ? { ...entry, stage } : entry)),
-        activityByLeadId: logActivity(state.activityByLeadId, id, {
-          type: 'stage-change',
-          description: `Moved from ${LEAD_STAGE_LABEL[lead.stage]} to ${LEAD_STAGE_LABEL[stage]}`,
-          actor: MOCK_CURRENT_USER.name,
-        }),
-      };
-    });
+    set((state) => ({
+      leads: state.leads.map((l) => (l.id === id ? updatedLead : l)),
+    }));
+
+    try {
+      await apiClient.put(`/leads/${id}`, { stage });
+    } catch {
+      // Rollback on error
+      set((state) => ({
+        leads: state.leads.map((l) => (l.id === id ? lead : l)),
+      }));
+    }
   },
 
-  assignOwner: (id, owner) => {
-    set((state) => {
-      const lead = state.leads.find((entry) => entry.id === id);
-      if (!lead || lead.owner === owner) return state;
+  assignOwner: async (id, owner) => {
+    const lead = get().leads.find((l) => l.id === id);
+    if (!lead) return;
+    const updatedLead = { ...lead, owner };
 
-      return {
-        leads: state.leads.map((entry) => (entry.id === id ? { ...entry, owner } : entry)),
-        activityByLeadId: logActivity(state.activityByLeadId, id, {
-          type: 'owner-change',
-          description: `Reassigned from ${lead.owner} to ${owner}`,
-          actor: MOCK_CURRENT_USER.name,
-        }),
-      };
-    });
+    set((state) => ({
+      leads: state.leads.map((l) => (l.id === id ? updatedLead : l)),
+    }));
+
+    try {
+      await apiClient.put(`/leads/${id}`, { owner });
+    } catch {
+      set((state) => ({
+        leads: state.leads.map((l) => (l.id === id ? lead : l)),
+      }));
+    }
   },
 
-  logNote: (leadId, content) => {
+  logNote: async (leadId, content) => {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    set((state) => ({
-      activityByLeadId: logActivity(state.activityByLeadId, leadId, {
+    try {
+      const res = await apiClient.post(`/leads/${leadId}/activity`, {
         type: 'note',
         description: trimmed,
-        actor: MOCK_CURRENT_USER.name,
-      }),
-    }));
+      });
+      const activity: LeadActivity = res.data;
+
+      set((state) => ({
+        activityByLeadId: {
+          ...state.activityByLeadId,
+          [leadId]: [activity, ...(state.activityByLeadId[leadId] ?? [])],
+        },
+      }));
+    } catch {
+      // Ignore
+    }
   },
 }));
 

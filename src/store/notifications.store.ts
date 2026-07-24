@@ -1,37 +1,59 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import type { Notification } from '@/types/notification.types';
-import { MOCK_NOTIFICATIONS } from '@/mock/notifications.mock';
+import { apiClient } from '@/services/api.client';
 
 interface NotificationsState {
   notifications: Notification[];
+  isLoading: boolean;
 
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  deleteNotification: (id: string) => void;
+  fetchNotifications: () => Promise<void>;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
   clearAll: () => void;
 }
 
 export const useNotificationsStore = create<NotificationsState>()((set) => ({
-  notifications: MOCK_NOTIFICATIONS,
+  notifications: [],
+  isLoading: false,
 
-  markAsRead: (id) => {
-    set((state) => ({
-      notifications: state.notifications.map((notification) =>
-        notification.id === id ? { ...notification, isRead: true } : notification,
-      ),
-    }));
+  fetchNotifications: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/notifications');
+      const data = res.data.data || res.data || [];
+      set({ notifications: data, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
   },
 
-  markAllAsRead: () => {
+  markAsRead: async (id) => {
     set((state) => ({
-      notifications: state.notifications.map((notification) => ({ ...notification, isRead: true })),
+      notifications: state.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     }));
+    try {
+      await apiClient.patch(`/notifications/${id}/read`);
+    } catch {
+      // Ignore
+    }
   },
 
-  deleteNotification: (id) => {
+  markAllAsRead: async () => {
     set((state) => ({
-      notifications: state.notifications.filter((notification) => notification.id !== id),
+      notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
+    }));
+    try {
+      await apiClient.patch('/notifications/read-all');
+    } catch {
+      // Ignore
+    }
+  },
+
+  deleteNotification: async (id) => {
+    set((state) => ({
+      notifications: state.notifications.filter((n) => n.id !== id),
     }));
   },
 
@@ -40,7 +62,6 @@ export const useNotificationsStore = create<NotificationsState>()((set) => ({
   },
 }));
 
-/** Sorted newest-first — every consumer (menu, preview, center) wants this order. */
 export function useSortedNotifications() {
   const notifications = useNotificationsStore((state) => state.notifications);
   return useMemo(
@@ -51,7 +72,6 @@ export function useSortedNotifications() {
     [notifications],
   );
 }
-
 
 export function useUnreadNotificationCount() {
   return useNotificationsStore((state) => state.notifications.filter((n) => !n.isRead).length);

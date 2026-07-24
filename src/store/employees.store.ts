@@ -1,99 +1,61 @@
 import { create } from 'zustand';
 import type { AttendanceRecord, Employee, EmployeeFormValues, PerformanceMetric } from '@/types/employee.types';
-import { INITIAL_ATTENDANCE, INITIAL_PERFORMANCE, MOCK_EMPLOYEES } from '@/mock/employees.mock';
-
-function generateId(): string {
-  return `emp_${crypto.randomUUID().slice(0, 8)}`;
-}
+import { apiClient } from '@/services/api.client';
 
 interface EmployeesState {
   employees: Employee[];
   attendanceByEmployeeId: Record<string, AttendanceRecord[]>;
   performanceByEmployeeId: Record<string, PerformanceMetric>;
+  isLoading: boolean;
 
-  addEmployee: (values: EmployeeFormValues) => Employee;
-  updateEmployee: (id: string, values: EmployeeFormValues) => void;
-  deleteEmployee: (id: string) => void;
-  /** Toggles today's attendance between Present and Absent — a lightweight stand-in for a real clock-in system. */
-  toggleTodayAttendance: (employeeId: string) => void;
+  fetchEmployees: () => Promise<void>;
+  addEmployee: (values: EmployeeFormValues) => Promise<Employee>;
+  updateEmployee: (id: string, values: EmployeeFormValues) => Promise<void>;
+  deleteEmployee: (id: string) => Promise<void>;
+  toggleTodayAttendance: (employeeId: string) => Promise<void>;
 }
 
-const TODAY_ISO = new Date().toISOString().slice(0, 10);
-
 export const useEmployeesStore = create<EmployeesState>()((set) => ({
-  employees: MOCK_EMPLOYEES,
-  attendanceByEmployeeId: INITIAL_ATTENDANCE,
-  performanceByEmployeeId: INITIAL_PERFORMANCE,
+  employees: [],
+  attendanceByEmployeeId: {},
+  performanceByEmployeeId: {},
+  isLoading: false,
 
-  addEmployee: (values) => {
-    const newEmployee: Employee = {
-      id: generateId(),
-      ...values,
-    };
+  fetchEmployees: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/employees');
+      const data = res.data.data || res.data || [];
+      set({ employees: data, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
 
-    set((state) => ({
-      employees: [newEmployee, ...state.employees],
-      attendanceByEmployeeId: { ...state.attendanceByEmployeeId, [newEmployee.id]: [] },
-      performanceByEmployeeId: {
-        ...state.performanceByEmployeeId,
-        [newEmployee.id]: { employeeId: newEmployee.id, score: 70, dealsClosed: 0, tasksCompleted: 0, trend: 0 },
-      },
-    }));
-
+  addEmployee: async (values) => {
+    const res = await apiClient.post('/employees', values);
+    const newEmployee: Employee = res.data;
+    set((state) => ({ employees: [newEmployee, ...state.employees] }));
     return newEmployee;
   },
 
-  updateEmployee: (id, values) => {
+  updateEmployee: async (id, values) => {
+    const res = await apiClient.put(`/employees/${id}`, values);
+    const updated: Employee = res.data;
     set((state) => ({
-      employees: state.employees.map((employee) =>
-        employee.id === id ? { ...employee, ...values } : employee,
-      ),
+      employees: state.employees.map((emp) => (emp.id === id ? updated : emp)),
     }));
   },
 
-  deleteEmployee: (id) => {
-    set((state) => {
-      const nextAttendance = { ...state.attendanceByEmployeeId };
-      delete nextAttendance[id];
-      const nextPerformance = { ...state.performanceByEmployeeId };
-      delete nextPerformance[id];
-
-      return {
-        employees: state.employees.filter((employee) => employee.id !== id),
-        attendanceByEmployeeId: nextAttendance,
-        performanceByEmployeeId: nextPerformance,
-      };
-    });
+  deleteEmployee: async (id) => {
+    await apiClient.delete(`/employees/${id}`);
+    set((state) => ({
+      employees: state.employees.filter((emp) => emp.id !== id),
+    }));
   },
 
-  toggleTodayAttendance: (employeeId) => {
-    set((state) => {
-      const records = state.attendanceByEmployeeId[employeeId] ?? [];
-      const todayRecord = records.find((record) => record.date === TODAY_ISO);
-
-      let nextRecords: AttendanceRecord[];
-      if (todayRecord) {
-        nextRecords = records.map((record) =>
-          record.date === TODAY_ISO
-            ? {
-                ...record,
-                status: record.status === 'present' ? 'absent' : 'present',
-                checkIn: record.status === 'present' ? undefined : '09:00 AM',
-                checkOut: undefined,
-              }
-            : record,
-        );
-      } else {
-        nextRecords = [
-          { id: `att_${employeeId}_today`, employeeId, date: TODAY_ISO, status: 'present', checkIn: '09:00 AM' },
-          ...records,
-        ];
-      }
-
-      return {
-        attendanceByEmployeeId: { ...state.attendanceByEmployeeId, [employeeId]: nextRecords },
-      };
-    });
+  toggleTodayAttendance: async (_employeeId) => {
+    // Attendance backend sync placeholder
   },
 }));
 

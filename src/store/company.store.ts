@@ -1,16 +1,43 @@
 import { create } from 'zustand';
 import type { CompanyProfile, CompanyProfileFormValues } from '@/types/settings.types';
-import { MOCK_CURRENT_COMPANY } from '@/mock/company.mock';
+import { apiClient } from '@/services/api.client';
 
 interface CompanyState {
   company: CompanyProfile;
-  updateCompany: (values: CompanyProfileFormValues) => void;
+  isLoading: boolean;
+
+  fetchCompany: () => Promise<void>;
+  updateCompany: (values: CompanyProfileFormValues) => Promise<void>;
 }
 
 export const useCompanyStore = create<CompanyState>()((set) => ({
-  company: MOCK_CURRENT_COMPANY,
+  company: {
+    id: '',
+    name: '',
+    plan: 'starter',
+    industry: '',
+    website: '',
+    address: '',
+    timezone: 'UTC',
+  },
+  isLoading: false,
 
-  updateCompany: (values) => {
-    set((state) => ({ company: { ...state.company, ...values } }));
+  fetchCompany: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/settings/company');
+      if (res.data) {
+        set({ company: res.data, isLoading: false });
+      }
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  updateCompany: async (values) => {
+    const res = await apiClient.put('/settings/company', values);
+    if (res.data) {
+      set({ company: res.data });
+    }
   },
 }));

@@ -1,76 +1,84 @@
 import { create } from 'zustand';
 import type { Task, TaskFormValues, TaskStatus } from '@/types/task.types';
-import { MOCK_TASKS } from '@/mock/tasks.mock';
-
-function generateId(): string {
-  return `task_${crypto.randomUUID().slice(0, 8)}`;
-}
+import { apiClient } from '@/services/api.client';
 
 interface TasksState {
   tasks: Task[];
+  isLoading: boolean;
 
-  addTask: (values: TaskFormValues) => Task;
-  updateTask: (id: string, values: TaskFormValues) => void;
-  deleteTask: (id: string) => void;
-  /** Used by the Kanban drag-drop, the list checkbox, and the calendar/detail quick actions. */
-  moveStatus: (id: string, status: TaskStatus) => void;
-  /** Toggles between 'done' and 'todo' — the quick-complete checkbox used in list/dashboard views. */
-  toggleDone: (id: string) => void;
+  fetchTasks: () => Promise<void>;
+  addTask: (values: TaskFormValues) => Promise<Task>;
+  updateTask: (id: string, values: TaskFormValues) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  moveStatus: (id: string, status: TaskStatus) => Promise<void>;
+  toggleDone: (id: string) => Promise<void>;
 }
 
-export const useTasksStore = create<TasksState>()((set) => ({
-  tasks: MOCK_TASKS,
+export const useTasksStore = create<TasksState>()((set, get) => ({
+  tasks: [],
+  isLoading: false,
 
-  addTask: (values) => {
-    const newTask: Task = {
-      id: generateId(),
-      title: values.title,
-      description: values.description || undefined,
-      assignee: values.assignee,
-      relatedTo: values.relatedTo || undefined,
-      dueDate: values.dueDate,
-      priority: values.priority,
-      status: values.status,
-      createdAt: new Date().toISOString(),
-    };
+  fetchTasks: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/tasks');
+      const data = res.data.data || res.data || [];
+      set({ tasks: data, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  addTask: async (values) => {
+    const res = await apiClient.post('/tasks', values);
+    const newTask: Task = res.data;
     set((state) => ({ tasks: [newTask, ...state.tasks] }));
     return newTask;
   },
 
-  updateTask: (id, values) => {
+  updateTask: async (id, values) => {
+    const res = await apiClient.put(`/tasks/${id}`, values);
+    const updated: Task = res.data;
     set((state) => ({
-      tasks: state.tasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              title: values.title,
-              description: values.description || undefined,
-              assignee: values.assignee,
-              relatedTo: values.relatedTo || undefined,
-              dueDate: values.dueDate,
-              priority: values.priority,
-              status: values.status,
-            }
-          : task,
-      ),
+      tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
   },
 
-  deleteTask: (id) => {
-    set((state) => ({ tasks: state.tasks.filter((task) => task.id !== id) }));
+  deleteTask: async (id) => {
+    await apiClient.delete(`/tasks/${id}`);
+    set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
   },
 
-  moveStatus: (id, status) => {
+  moveStatus: async (id, status) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    const updated = { ...task, status };
     set((state) => ({
-      tasks: state.tasks.map((task) => (task.id === id ? { ...task, status } : task)),
+      tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    try {
+      await apiClient.put(`/tasks/${id}`, { status });
+    } catch {
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? task : t)),
+      }));
+    }
   },
 
-  toggleDone: (id) => {
+  toggleDone: async (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    const nextStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done';
+    const updated = { ...task, status: nextStatus };
     set((state) => ({
-      tasks: state.tasks.map((task) =>
-        task.id === id ? { ...task, status: task.status === 'done' ? 'todo' : 'done' } : task,
-      ),
+      tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    try {
+      await apiClient.put(`/tasks/${id}`, { status: nextStatus });
+    } catch {
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? task : t)),
+      }));
+    }
   },
 }));

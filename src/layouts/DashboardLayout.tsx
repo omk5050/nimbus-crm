@@ -1,6 +1,14 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { useUiStore } from '@/store/ui.store';
+import { useCustomersStore } from '@/store/customers.store';
+import { useLeadsStore } from '@/store/leads.store';
+import { useSalesStore } from '@/store/sales.store';
+import { useTasksStore } from '@/store/tasks.store';
+import { useEmployeesStore } from '@/store/employees.store';
+import { useNotificationsStore } from '@/store/notifications.store';
+import { useCompanyStore } from '@/store/company.store';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileDrawer } from '@/components/layout/MobileDrawer';
 import { Topbar } from '@/components/layout/Topbar';
@@ -11,6 +19,16 @@ export function DashboardLayout() {
   const isSidebarCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const toggleSidebarCollapsed = useUiStore((state) => state.toggleSidebarCollapsed);
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    useCustomersStore.getState().fetchCustomers();
+    useLeadsStore.getState().fetchLeads();
+    useSalesStore.getState().fetchSalesData();
+    useTasksStore.getState().fetchTasks();
+    useEmployeesStore.getState().fetchEmployees();
+    useNotificationsStore.getState().fetchNotifications();
+    useCompanyStore.getState().fetchCompany();
+  }, []);
 
   // Key on the top-level segment only (e.g. "/employees") so that navigating
   // to a sub-page like "/employees/emp_123" does NOT trigger the exit

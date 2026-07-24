@@ -5,12 +5,7 @@ import type {
   CustomerNote,
   CustomerTimelineEvent,
 } from '@/types/customer.types';
-import {
-  INITIAL_CUSTOMER_NOTES,
-  INITIAL_CUSTOMER_TIMELINE,
-  MOCK_CUSTOMERS,
-} from '@/mock/customers.mock';
-import { MOCK_CURRENT_USER } from '@/mock/user.mock';
+import { apiClient } from '@/services/api.client';
 
 function parseTags(rawTags: string): string[] {
   return rawTags
@@ -19,149 +14,103 @@ function parseTags(rawTags: string): string[] {
     .filter(Boolean);
 }
 
-function generateId(): string {
-  return `cust_${crypto.randomUUID().slice(0, 8)}`;
-}
-
 interface CustomersState {
   customers: Customer[];
   notesByCustomerId: Record<string, CustomerNote[]>;
   timelineByCustomerId: Record<string, CustomerTimelineEvent[]>;
+  isLoading: boolean;
 
-  /** Creates the customer and returns it so the caller can e.g. navigate to its detail page. */
-  addCustomer: (values: CustomerFormValues) => Customer;
-  updateCustomer: (id: string, values: CustomerFormValues) => void;
-  deleteCustomer: (id: string) => void;
-  addNote: (customerId: string, content: string) => void;
+  fetchCustomers: () => Promise<void>;
+  fetchCustomerDetails: (id: string) => Promise<void>;
+  addCustomer: (values: CustomerFormValues) => Promise<Customer>;
+  updateCustomer: (id: string, values: CustomerFormValues) => Promise<void>;
+  deleteCustomer: (id: string) => Promise<void>;
+  addNote: (customerId: string, content: string) => Promise<void>;
 }
 
 export const useCustomersStore = create<CustomersState>()((set) => ({
-  customers: MOCK_CUSTOMERS,
-  notesByCustomerId: INITIAL_CUSTOMER_NOTES,
-  timelineByCustomerId: INITIAL_CUSTOMER_TIMELINE,
+  customers: [],
+  notesByCustomerId: {},
+  timelineByCustomerId: {},
+  isLoading: false,
 
-  addCustomer: (values) => {
-    const newCustomer: Customer = {
-      id: generateId(),
-      name: values.name,
-      company: values.company,
-      email: values.email,
-      phone: values.phone,
-      status: values.status,
-      industry: values.industry,
-      owner: values.owner,
-      address: values.address,
-      lifetimeValue: 0,
+  fetchCustomers: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await apiClient.get('/customers');
+      const data = res.data.data || res.data || [];
+      set({ customers: data, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchCustomerDetails: async (id: string) => {
+    try {
+      const [notesRes, timelineRes] = await Promise.all([
+        apiClient.get(`/customers/${id}/notes`).catch(() => ({ data: [] })),
+        apiClient.get(`/customers/${id}/timeline`).catch(() => ({ data: [] })),
+      ]);
+      set((state) => ({
+        notesByCustomerId: { ...state.notesByCustomerId, [id]: notesRes.data },
+        timelineByCustomerId: { ...state.timelineByCustomerId, [id]: timelineRes.data },
+      }));
+    } catch {
+      // Ignore
+    }
+  },
+
+  addCustomer: async (values) => {
+    const payload = {
+      ...values,
       tags: parseTags(values.tags),
-      createdAt: new Date().toISOString(),
     };
-
-    const createdEvent: CustomerTimelineEvent = {
-      id: `evt_${newCustomer.id}_created`,
-      customerId: newCustomer.id,
-      type: 'created',
-      description: 'Account created',
-      actor: MOCK_CURRENT_USER.name,
-      createdAt: newCustomer.createdAt,
-    };
+    const res = await apiClient.post('/customers', payload);
+    const newCustomer: Customer = res.data;
 
     set((state) => ({
       customers: [newCustomer, ...state.customers],
-      notesByCustomerId: { ...state.notesByCustomerId, [newCustomer.id]: [] },
-      timelineByCustomerId: {
-        ...state.timelineByCustomerId,
-        [newCustomer.id]: [createdEvent],
-      },
     }));
 
     return newCustomer;
   },
 
-  updateCustomer: (id, values) => {
+  updateCustomer: async (id, values) => {
+    const payload = {
+      ...values,
+      tags: parseTags(values.tags),
+    };
+    const res = await apiClient.put(`/customers/${id}`, payload);
+    const updated: Customer = res.data;
+
     set((state) => ({
-      customers: state.customers.map((customer) =>
-        customer.id === id
-          ? {
-              ...customer,
-              name: values.name,
-              company: values.company,
-              email: values.email,
-              phone: values.phone,
-              status: values.status,
-              industry: values.industry,
-              owner: values.owner,
-              address: values.address,
-              tags: parseTags(values.tags),
-            }
-          : customer,
-      ),
-      timelineByCustomerId: {
-        ...state.timelineByCustomerId,
-        [id]: [
-          {
-            id: `evt_${id}_${Date.now()}`,
-            customerId: id,
-            type: 'updated',
-            description: 'Profile details updated',
-            actor: MOCK_CURRENT_USER.name,
-            createdAt: new Date().toISOString(),
-          },
-          ...(state.timelineByCustomerId[id] ?? []),
-        ],
-      },
+      customers: state.customers.map((c) => (c.id === id ? updated : c)),
     }));
   },
 
-  deleteCustomer: (id) => {
-    set((state) => {
-      const nextNotes = { ...state.notesByCustomerId };
-      delete nextNotes[id];
-      const nextTimeline = { ...state.timelineByCustomerId };
-      delete nextTimeline[id];
-
-      return {
-        customers: state.customers.filter((customer) => customer.id !== id),
-        notesByCustomerId: nextNotes,
-        timelineByCustomerId: nextTimeline,
-      };
-    });
+  deleteCustomer: async (id) => {
+    await apiClient.delete(`/customers/${id}`);
+    set((state) => ({
+      customers: state.customers.filter((c) => c.id !== id),
+    }));
   },
 
-  addNote: (customerId, content) => {
+  addNote: async (customerId, content) => {
     const trimmed = content.trim();
     if (!trimmed) return;
 
-    const note: CustomerNote = {
-      id: `note_${customerId}_${Date.now()}`,
-      customerId,
-      author: MOCK_CURRENT_USER.name,
-      content: trimmed,
-      createdAt: new Date().toISOString(),
-    };
-
-    const event: CustomerTimelineEvent = {
-      id: `evt_${customerId}_${Date.now()}`,
-      customerId,
-      type: 'note',
-      description: 'Note added',
-      actor: MOCK_CURRENT_USER.name,
-      createdAt: note.createdAt,
-    };
+    const res = await apiClient.post(`/customers/${customerId}/notes`, { content: trimmed });
+    const note: CustomerNote = res.data;
 
     set((state) => ({
       notesByCustomerId: {
         ...state.notesByCustomerId,
         [customerId]: [note, ...(state.notesByCustomerId[customerId] ?? [])],
       },
-      timelineByCustomerId: {
-        ...state.timelineByCustomerId,
-        [customerId]: [event, ...(state.timelineByCustomerId[customerId] ?? [])],
-      },
     }));
   },
 }));
 
-/** Convenience selector hook — components re-render only when this specific customer changes. */
 export function useCustomer(id: string | undefined) {
   return useCustomersStore((state) => state.customers.find((customer) => customer.id === id));
 }
