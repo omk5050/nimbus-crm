@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router';
 import type { Location } from 'react-router';
-import { LogIn } from 'lucide-react';
+import { AlertCircle, LogIn } from 'lucide-react';
 import { loginSchema } from '@/pages/auth/auth.schemas';
 import type { LoginFormValues } from '@/types/auth.types';
 import { TextField } from '@/components/inputs/TextField';
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
   const location = useLocation();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -31,9 +33,18 @@ export default function LoginPage() {
   });
 
   async function onSubmit(values: LoginFormValues) {
-    await login(values);
-    const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? ROUTES.DASHBOARD;
-    navigate(redirectTo, { replace: true });
+    setErrorMessage(null);
+    try {
+      await login({
+        ...values,
+        email: values.email.trim(),
+      });
+      const redirectTo = (location.state as LocationState | null)?.from?.pathname ?? ROUTES.DASHBOARD;
+      navigate(redirectTo, { replace: true });
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Invalid email or password. Please check your credentials and try again.';
+      setErrorMessage(msg);
+    }
   }
 
   return (
@@ -43,7 +54,14 @@ export default function LoginPage() {
         Sign in with your database credentials (Demo: <code className="font-mono text-xs">jordan@nimbus.example.com</code> / <code className="font-mono text-xs">Password123!</code>).
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 flex flex-col gap-4">
+      {errorMessage && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 flex flex-col gap-4">
         <TextField
           label="Email"
           type="email"

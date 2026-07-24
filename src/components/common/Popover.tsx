@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useDisclosure } from '@/hooks/useDisclosure';
@@ -15,11 +15,9 @@ export interface PopoverRenderProps {
 interface PopoverProps {
   trigger: (props: PopoverRenderProps) => ReactNode;
   children: (props: { close: () => void }) => ReactNode;
-  /** Horizontal alignment of the panel relative to the trigger. */
   align?: 'start' | 'end';
   panelClassName?: string;
   className?: string;
-  /** Lets a parent (e.g. a table row) control open state instead of the popover managing its own. */
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
 }
@@ -36,6 +34,7 @@ export function Popover({
   const disclosure = useDisclosure();
   const isControlled = controlledOpen !== undefined;
   const isOpen = isControlled ? controlledOpen : disclosure.isOpen;
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -58,12 +57,22 @@ export function Popover({
 
   useEffect(() => {
     if (!isOpen) return;
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < 180 && rect.top > 180) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
+      }
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') close();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   return (
@@ -73,12 +82,13 @@ export function Popover({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            initial={{ opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            exit={{ opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              'absolute z-40 mt-2 rounded-lg border border-border bg-popover shadow-lg',
+              'absolute z-50 rounded-lg border border-border bg-popover shadow-lg',
+              placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
               align === 'start' ? 'left-0' : 'right-0',
               panelClassName,
             )}

@@ -7,8 +7,12 @@ import { AppError } from '@/middleware/error.middleware';
 import type { AuthPayload } from '@/middleware/auth.middleware';
 import type { LoginInput, ForgotPasswordInput, ResetPasswordInput } from './auth.schema';
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
+
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 // ─── Token helpers ────────────────────────────────────────────
 
@@ -23,8 +27,9 @@ function signRefreshToken(userId: string): string {
 // ─── Service methods ──────────────────────────────────────────
 
 export async function login(input: LoginInput) {
+  const cleanEmail = input.email.trim().toLowerCase();
   const user = await prisma.user.findFirst({
-    where: { employee: { email: input.email } },
+    where: { employee: { email: { equals: cleanEmail, mode: 'insensitive' } } },
     include: {
       employee: { select: { id: true, name: true, email: true, companyId: true, role: true } },
     },
@@ -49,10 +54,10 @@ export async function login(input: LoginInput) {
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken(user.id);
 
-  // Store a hash of the refresh token so we can validate it on rotation
+  // Fast SHA-256 hash for stored refresh token
   await prisma.user.update({
     where: { id: user.id },
-    data: { refreshTokenHash: await bcrypt.hash(refreshToken, SALT_ROUNDS) },
+    data: { refreshTokenHash: hashToken(refreshToken) },
   });
 
   return {
@@ -92,7 +97,7 @@ export async function refresh(refreshToken: string) {
     throw new AppError(401, 'INVALID_TOKEN', 'Refresh token has been revoked');
   }
 
-  const valid = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+  const valid = hashToken(refreshToken) === user.refreshTokenHash;
   if (!valid) {
     throw new AppError(401, 'INVALID_TOKEN', 'Refresh token is invalid');
   }
@@ -108,7 +113,7 @@ export async function refresh(refreshToken: string) {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { refreshTokenHash: await bcrypt.hash(newRefreshToken, SALT_ROUNDS) },
+    data: { refreshTokenHash: hashToken(newRefreshToken) },
   });
 
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
@@ -116,11 +121,10 @@ export async function refresh(refreshToken: string) {
 
 export async function forgotPassword(input: ForgotPasswordInput) {
   const user = await prisma.user.findFirst({
-    where: { employee: { email: input.email } },
+    where: { employee: { email: { equals: input.email.trim().toLowerCase(), mode: 'insensitive' } } },
     include: { employee: { select: { email: true } } },
   });
 
-  // Always return success to avoid email enumeration
   if (!user) return;
 
   const resetToken = crypto.randomBytes(32).toString('hex');
@@ -131,12 +135,6 @@ export async function forgotPassword(input: ForgotPasswordInput) {
       resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
     },
   });
-
-  // TODO: replace console.log with a real email send via Nodemailer/Resend
-  console.log(
-    `[AUTH] Password reset link for ${user.employee.email}: ` +
-    `${process.env.CORS_ORIGINS?.split(',')[0]}/reset-password?token=${resetToken}`,
-  );
 }
 
 export async function resetPassword(input: ResetPasswordInput) {
@@ -158,7 +156,7 @@ export async function resetPassword(input: ResetPasswordInput) {
       passwordHash,
       resetToken: null,
       resetTokenExpiresAt: null,
-      refreshTokenHash: null, // invalidate existing sessions
+      refreshTokenHash: null,
     },
   });
 }
