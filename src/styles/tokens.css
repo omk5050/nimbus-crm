@@ -1,0 +1,99 @@
+/**
+ * DESIGN TOKENS
+ * -------------
+ * Single source of truth for the visual language of Nimbus CRM.
+ * Nothing in components/ should ever hardcode a hex color, a radius,
+ * or a shadow — everything routes through the tokens declared here.
+ *
+ * Color tokens are declared twice (once for :root / light, once for
+ * .dark) using the SAME variable names, so a component written once
+ * (e.g. `bg-surface`) automatically re-themes when the `.dark` class
+ * is toggled on <html>. Structural tokens (radius, shadow, font) don't
+ * vary by theme, so they're declared once in index.css's @theme block.
+ */
+
+:root {
+  /* ---- Brand scale (indigo) ---- */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+  --color-brand-950: #1e1b4b;
+
+  /* ---- Semantic surfaces & text (light mode) ---- */
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+
+  --color-primary: #4f46e5;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #0f172a;
+
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+
+  --color-accent: #eef2ff;
+  --color-accent-foreground: #4338ca;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
+  --color-success: #16a34a;
+  --color-success-foreground: #ffffff;
+
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+
+  --color-border: #e2e8f0;
+  --color-input: #cbd5e1;
+  --color-ring: #4f46e5;
+}
+
+.dark {
+  --color-background: #020617;
+  --color-foreground: #f1f5f9;
+
+  --color-card: #0f172a;
+  --color-card-foreground: #f1f5f9;
+
+  --color-popover: #0f172a;
+  --color-popover-foreground: #f1f5f9;
+
+  --color-primary: #6366f1;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #1e293b;
+  --color-secondary-foreground: #f1f5f9;
+
+  --color-muted: #1e293b;
+  --color-muted-foreground: #94a3b8;
+
+  --color-accent: #1e1b4b;
+  --color-accent-foreground: #c7d2fe;
+
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+
+  --color-success: #22c55e;
+  --color-success-foreground: #052e16;
+
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #451a03;
+
+  --color-border: #1e293b;
+  --color-input: #334155;
+  --color-ring: #6366f1;
+}

@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nimbus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nimbus
+      POSTGRES_PASSWORD: nimbus_secret
+      POSTGRES_DB: nimbus_crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - nimbus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nimbus -d nimbus_crm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: pgAdmin web UI for inspecting the database
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: nimbus_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nimbus.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+volumes:
+  nimbus_pgdata:

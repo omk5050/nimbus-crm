@@ -1,0 +1,574 @@
+// This is the Prisma schema for Nimbus CRM.
+// It mirrors every type defined in the frontend's src/types/ directory.
+// Run `npx prisma migrate dev` to apply to your local PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS  (mirror the union types in the frontend)
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  manager
+  sales_rep
+  support
+}
+
+enum CustomerStatus {
+  active
+  prospect
+  inactive
+}
+
+enum CustomerIndustry {
+  Technology
+  Retail
+  Manufacturing
+  Healthcare
+  Logistics
+  Finance
+  Hospitality
+  Education
+}
+
+enum CustomerFileType {
+  pdf
+  doc
+  sheet
+  image
+  other
+}
+
+enum CustomerTimelineEventType {
+  created
+  updated
+  note
+  call
+  email
+  meeting
+  deal
+}
+
+enum LeadStage {
+  new
+  contacted
+  qualified
+  proposal
+  won
+  lost
+}
+
+enum LeadSource {
+  Website
+  Referral
+  Cold_Outreach
+  Social_Media
+  Partner
+}
+
+enum LeadActivityType {
+  created
+  stage_change
+  owner_change
+  call
+  email
+  meeting
+  note
+}
+
+enum DealStage {
+  qualifying
+  proposal
+  negotiation
+  won
+  lost
+}
+
+enum QuotationStatus {
+  draft
+  sent
+  accepted
+  declined
+  expired
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+  overdue
+  void
+}
+
+enum PaymentMethod {
+  card
+  bank_transfer
+  check
+  cash
+}
+
+enum PaymentStatus {
+  completed
+  pending
+  failed
+}
+
+enum Department {
+  Sales
+  Engineering
+  Marketing
+  Support
+  Finance
+  HR
+}
+
+enum EmployeeStatus {
+  active
+  on_leave
+  terminated
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  leave
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  in_review
+  done
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum NotificationType {
+  lead
+  deal
+  invoice
+  task
+  customer
+  system
+}
+
+enum CompanyPlan {
+  starter
+  growth
+  enterprise
+}
+
+enum PermissionModule {
+  customers
+  leads
+  sales
+  employees
+  tasks
+  reports
+  settings
+}
+
+enum PermissionAction {
+  view
+  edit
+  delete
+}
+
+// ─────────────────────────────────────────────────────────────
+// COMPANY
+// ─────────────────────────────────────────────────────────────
+
+model Company {
+  id        String      @id @default(uuid())
+  name      String
+  plan      CompanyPlan @default(starter)
+  industry  String      @default("")
+  website   String      @default("")
+  address   String      @default("")
+  timezone  String      @default("UTC")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  employees Employee[]
+  customers Customer[]
+  leads     Lead[]
+  tasks     Task[]
+
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH / EMPLOYEES
+// ─────────────────────────────────────────────────────────────
+
+model Employee {
+  id           String         @id @default(uuid())
+  companyId    String
+  name         String
+  email        String         @unique
+  phone        String         @default("")
+  role         String         @default("")
+  department   Department
+  status       EmployeeStatus @default(active)
+  hireDate     DateTime
+  avatarColor  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user         User?
+  attendance   AttendanceRecord[]
+  performance  PerformanceMetric?
+
+  @@map("employees")
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  employeeId          String    @unique
+  passwordHash        String
+  role                UserRole  @default(sales_rep)
+  hasAccess           Boolean   @default(true)
+  resetToken          String?
+  resetTokenExpiresAt DateTime?
+  refreshTokenHash    String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  employee      Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+  preferences   UserPreference?
+
+  @@map("users")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(uuid())
+  employeeId String
+  date       String           // ISO date string YYYY-MM-DD
+  status     AttendanceStatus @default(present)
+  checkIn    String?
+  checkOut   String?
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance_records")
+}
+
+model PerformanceMetric {
+  id              String   @id @default(uuid())
+  employeeId      String   @unique
+  score           Int      @default(70)
+  dealsClosed     Int      @default(0)
+  tasksCompleted  Int      @default(0)
+  trend           Float    @default(0)
+  updatedAt       DateTime @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("performance_metrics")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────────────────────────
+
+model Customer {
+  id            String           @id @default(uuid())
+  companyId     String
+  name          String
+  company       String
+  email         String
+  phone         String           @default("")
+  status        CustomerStatus   @default(prospect)
+  industry      CustomerIndustry @default(Technology)
+  owner         String           @default("")
+  address       String           @default("")
+  lifetimeValue Float            @default(0)
+  tags          String[]         @default([])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  workspace     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  notes         CustomerNote[]
+  files         CustomerFile[]
+  timeline      CustomerTimelineEvent[]
+  deals         Deal[]
+  quotations    Quotation[]
+  invoices      Invoice[]
+
+  @@map("customers")
+}
+
+model CustomerNote {
+  id         String   @id @default(uuid())
+  customerId String
+  author     String
+  content    String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_notes")
+}
+
+model CustomerFile {
+  id          String           @id @default(uuid())
+  customerId  String
+  fileName    String
+  fileType    CustomerFileType @default(other)
+  sizeLabel   String
+  storageKey  String           // S3 key or local path
+  uploadedBy  String
+  createdAt   DateTime         @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_files")
+}
+
+model CustomerTimelineEvent {
+  id          String                    @id @default(uuid())
+  customerId  String
+  type        CustomerTimelineEventType
+  description String
+  actor       String
+  createdAt   DateTime                  @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("customer_timeline_events")
+}
+
+// ─────────────────────────────────────────────────────────────
+// LEADS
+// ─────────────────────────────────────────────────────────────
+
+model Lead {
+  id                String          @id @default(uuid())
+  companyId         String
+  name              String
+  company           String
+  email             String
+  phone             String          @default("")
+  stage             LeadStage       @default(new)
+  source            LeadSource      @default(Website)
+  owner             String          @default("")
+  value             Float           @default(0)
+  expectedCloseDate DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  workspace  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activity   LeadActivity[]
+
+  @@map("leads")
+}
+
+model LeadActivity {
+  id          String          @id @default(uuid())
+  leadId      String
+  type        LeadActivityType
+  description String
+  actor       String
+  createdAt   DateTime        @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_activity")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SALES — Deals, Quotations, Invoices, Payments
+// ─────────────────────────────────────────────────────────────
+
+model Deal {
+  id                String    @id @default(uuid())
+  companyId         String
+  title             String
+  customerId        String
+  customerName      String
+  company           String
+  stage             DealStage @default(qualifying)
+  value             Float     @default(0)
+  owner             String    @default("")
+  expectedCloseDate DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  workspace  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  @@map("deals")
+}
+
+model Quotation {
+  id           String          @id @default(uuid())
+  companyId    String
+  quoteNumber  String          @unique
+  dealId       String?
+  customerId   String
+  customerName String
+  company      String
+  status       QuotationStatus @default(draft)
+  validUntil   DateTime
+  notes        String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  workspace Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  items     QuotationItem[]
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id          String @id @default(uuid())
+  quotationId String
+  description String
+  quantity    Float  @default(1)
+  unitPrice   Float  @default(0)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@map("quotation_items")
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  companyId     String
+  invoiceNumber String        @unique
+  dealId        String?
+  quotationId   String?
+  customerId    String
+  customerName  String
+  company       String
+  status        InvoiceStatus @default(draft)
+  dueDate       DateTime
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  workspace Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  items     InvoiceItem[]
+  payments  Payment[]
+
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String @id @default(uuid())
+  invoiceId   String
+  description String
+  quantity    Float  @default(1)
+  unitPrice   Float  @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_items")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  companyId     String
+  invoiceId     String
+  invoiceNumber String
+  customerName  String
+  company       String
+  amount        Float
+  method        PaymentMethod @default(card)
+  status        PaymentStatus @default(completed)
+  createdAt     DateTime      @default(now())
+
+  workspace Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// TASKS
+// ─────────────────────────────────────────────────────────────
+
+model Task {
+  id          String       @id @default(uuid())
+  companyId   String
+  title       String
+  description String?
+  assignee    String       @default("")
+  relatedTo   String?
+  dueDate     DateTime
+  priority    TaskPriority @default(medium)
+  status      TaskStatus   @default(todo)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  workspace Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+// ─────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(uuid())
+  userId      String
+  type        NotificationType
+  title       String
+  description String
+  isRead      Boolean          @default(false)
+  link        String?
+  createdAt   DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────────────────────────
+
+model RolePermission {
+  id       String           @id @default(uuid())
+  companyId String
+  role     UserRole
+  module   PermissionModule
+  action   PermissionAction
+  allowed  Boolean          @default(false)
+
+  @@unique([companyId, role, module, action])
+  @@map("role_permissions")
+}
+
+model UserPreference {
+  id                  String  @id @default(uuid())
+  userId              String  @unique
+  emailNotifications  Boolean @default(true)
+  taskReminders       Boolean @default(true)
+  weeklyDigest        Boolean @default(false)
+  density             String  @default("comfortable")
+  dateFormat          String  @default("MDY")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
