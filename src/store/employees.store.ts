@@ -9,6 +9,7 @@ interface EmployeesState {
   isLoading: boolean;
 
   fetchEmployees: () => Promise<void>;
+  fetchEmployeeDetails: (id: string) => Promise<void>;
   addEmployee: (values: EmployeeFormValues) => Promise<Employee>;
   updateEmployee: (id: string, values: EmployeeFormValues) => Promise<void>;
   deleteEmployee: (id: string) => Promise<void>;
@@ -54,8 +55,33 @@ export const useEmployeesStore = create<EmployeesState>()((set) => ({
     }));
   },
 
-  toggleTodayAttendance: async (_employeeId) => {
-    // Attendance backend sync placeholder
+  fetchEmployeeDetails: async (id: string) => {
+    try {
+      const [attendanceRes, performanceRes] = await Promise.all([
+        apiClient.get(`/employees/${id}/attendance`).catch(() => ({ data: [] })),
+        apiClient.get(`/employees/${id}/performance`).catch(() => ({ data: null })),
+      ]);
+      set((state) => ({
+        attendanceByEmployeeId: { ...state.attendanceByEmployeeId, [id]: attendanceRes.data },
+        performanceByEmployeeId: performanceRes.data
+          ? { ...state.performanceByEmployeeId, [id]: performanceRes.data }
+          : state.performanceByEmployeeId,
+      }));
+    } catch {
+      // Ignore
+    }
+  },
+
+  toggleTodayAttendance: async (employeeId) => {
+    try {
+      await apiClient.patch(`/employees/${employeeId}/attendance/today`, {});
+      const res = await apiClient.get(`/employees/${employeeId}/attendance`);
+      set((state) => ({
+        attendanceByEmployeeId: { ...state.attendanceByEmployeeId, [employeeId]: res.data },
+      }));
+    } catch {
+      // Ignore
+    }
   },
 }));
 

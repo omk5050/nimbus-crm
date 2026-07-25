@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, BarChart3, Building2, CalendarCheck, Mail, Pencil, Phone, Trash2, UserRound } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
@@ -9,6 +9,7 @@ import { Card, CardHeader } from '@/components/cards/Card';
 import { Tabs } from '@/components/common/Tabs';
 import type { TabItem } from '@/components/common/Tabs';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageLoader } from '@/components/common/PageLoader';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { EmployeeFormDrawer } from '@/pages/employees/components/EmployeeFormDrawer';
 import { AttendanceTab } from '@/pages/employees/components/tabs/AttendanceTab';
@@ -31,13 +32,30 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const employee = useEmployee(id);
+  const isLoading = useEmployeesStore((state) => state.isLoading);
+  const fetchEmployees = useEmployeesStore((state) => state.fetchEmployees);
+  const fetchEmployeeDetails = useEmployeesStore((state) => state.fetchEmployeeDetails);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [detailsFetched, setDetailsFetched] = useState(false);
+
+  // Ensure employees list is loaded (covers direct URL navigation / page refresh)
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  // Fetch attendance and performance once the employee id is known
+  useEffect(() => {
+    if (id && !detailsFetched) {
+      fetchEmployeeDetails(id).then(() => setDetailsFetched(true));
+    }
+  }, [id, fetchEmployeeDetails, detailsFetched]);
 
   if (!employee) {
+    if (isLoading) return <PageLoader />;
     return (
       <EmptyState
         icon={UserRound}

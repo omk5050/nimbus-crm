@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Clock, FolderOpen, NotebookPen, Pencil, Trash2, UserRound } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';
@@ -8,6 +8,7 @@ import { IconButton } from '@/components/buttons/IconButton';
 import { Tabs } from '@/components/common/Tabs';
 import type { TabItem } from '@/components/common/Tabs';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageLoader } from '@/components/common/PageLoader';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { CustomerFormDrawer } from '@/pages/customers/components/CustomerFormDrawer';
 import { OverviewTab } from '@/pages/customers/components/tabs/OverviewTab';
@@ -32,13 +33,30 @@ export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const customer = useCustomer(id);
+  const isLoading = useCustomersStore((state) => state.isLoading);
+  const fetchCustomers = useCustomersStore((state) => state.fetchCustomers);
+  const fetchCustomerDetails = useCustomersStore((state) => state.fetchCustomerDetails);
   const deleteCustomer = useCustomersStore((state) => state.deleteCustomer);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [detailsFetched, setDetailsFetched] = useState(false);
+
+  // Ensure customers list is loaded (covers direct URL navigation / page refresh)
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  // Fetch notes, timeline, and files once the customer id is known
+  useEffect(() => {
+    if (id && !detailsFetched) {
+      fetchCustomerDetails(id).then(() => setDetailsFetched(true));
+    }
+  }, [id, fetchCustomerDetails, detailsFetched]);
 
   if (!customer) {
+    if (isLoading) return <PageLoader />;
     return (
       <EmptyState
         icon={UserRound}

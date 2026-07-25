@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSimulatedLoading } from '@/hooks/useSimulatedLoading';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Plus, Trash2, Eye, Pencil } from 'lucide-react';
 import { DataTable } from '@/components/tables/DataTable';
@@ -23,17 +22,23 @@ import type { Customer, CustomerIndustry, CustomerStatus } from '@/types/custome
 import { formatCurrency, formatDate } from '@/utils/format';
 
 export default function CustomerListPage() {
-  const isLoading = useSimulatedLoading();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const customers = useCustomersStore((state) => state.customers);
+  const isLoading = useCustomersStore((state) => state.isLoading);
+  const fetchCustomers = useCustomersStore((state) => state.fetchCustomers);
   const deleteCustomer = useCustomersStore((state) => state.deleteCustomer);
 
   const [statusFilter, setStatusFilter] = useState<CustomerStatus[]>([]);
   const [industryFilter, setIndustryFilter] = useState<CustomerIndustry[]>([]);
   const [drawerCustomer, setDrawerCustomer] = useState<Customer | 'new' | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
+
+  // Fetch customers from API on mount
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   // Lets the Dashboard's "Add Customer" quick action deep-link straight into this drawer.
   useEffect(() => {

@@ -25,6 +25,7 @@ export default function LeadDetailPage() {
   const navigate = useNavigate();
   const lead = useLead(id);
   const isLoading = useLeadsStore((state) => state.isLoading);
+  const fetchLeads = useLeadsStore((state) => state.fetchLeads);
   const fetchLeadActivity = useLeadsStore((state) => state.fetchLeadActivity);
   const moveStage = useLeadsStore((state) => state.moveStage);
   const assignOwner = useLeadsStore((state) => state.assignOwner);
@@ -33,6 +34,11 @@ export default function LeadDetailPage() {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  // Ensure leads list is loaded (covers direct URL navigation / page refresh)
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   useEffect(() => {
     if (id) {

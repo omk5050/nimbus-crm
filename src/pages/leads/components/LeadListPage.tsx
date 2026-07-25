@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSimulatedLoading } from '@/hooks/useSimulatedLoading';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Plus, Trash2, Eye, Pencil, LayoutGrid, List as ListIcon } from 'lucide-react';
 import { DataTable } from '@/components/tables/DataTable';
@@ -27,11 +26,12 @@ import { cn } from '@/utils/cn';
 type ViewMode = 'kanban' | 'list';
 
 export default function LeadListPage() {
-  const isLoading = useSimulatedLoading();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const leads = useLeadsStore((state) => state.leads);
+  const isLoading = useLeadsStore((state) => state.isLoading);
+  const fetchLeads = useLeadsStore((state) => state.fetchLeads);
   const deleteLead = useLeadsStore((state) => state.deleteLead);
 
   const [view, setView] = useState<ViewMode>('kanban');
@@ -39,6 +39,11 @@ export default function LeadListPage() {
   const [sourceFilter, setSourceFilter] = useState<LeadSource[]>([]);
   const [drawerLead, setDrawerLead] = useState<Lead | 'new' | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Lead | null>(null);
+
+  // Fetch leads from API on mount
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   // Lets the Dashboard's "Create Lead" quick action deep-link straight into this drawer.
   useEffect(() => {

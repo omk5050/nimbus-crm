@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { useSimulatedLoading } from '@/hooks/useSimulatedLoading';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus, Trash2, Eye, Pencil } from 'lucide-react';
 import { DataTable } from '@/components/tables/DataTable';
@@ -23,15 +22,21 @@ import type { Department, Employee, EmployeeStatus } from '@/types/employee.type
 import { formatDate } from '@/utils/format';
 
 export default function EmployeeListPage() {
-  const isLoading = useSimulatedLoading();
   const navigate = useNavigate();
   const employees = useEmployeesStore((state) => state.employees);
+  const isLoading = useEmployeesStore((state) => state.isLoading);
+  const fetchEmployees = useEmployeesStore((state) => state.fetchEmployees);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
 
   const [departmentFilter, setDepartmentFilter] = useState<Department[]>([]);
   const [statusFilter, setStatusFilter] = useState<EmployeeStatus[]>([]);
   const [drawerEmployee, setDrawerEmployee] = useState<Employee | 'new' | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Employee | null>(null);
+
+  // Fetch employees from API on mount
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
