@@ -33,35 +33,31 @@ export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const customer = useCustomer(id);
-  const fetchCustomers = useCustomersStore((state) => state.fetchCustomers);
+  const fetchCustomer = useCustomersStore((state) => state.fetchCustomer);
   const fetchCustomerDetails = useCustomersStore((state) => state.fetchCustomerDetails);
   const deleteCustomer = useCustomersStore((state) => state.deleteCustomer);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
-  // Only show loader on direct URL navigation (store is empty on mount)
-  const [isInitializing, setIsInitializing] = useState(
-    () => useCustomersStore.getState().customers.length === 0,
-  );
+  const [isLoading, setIsLoading] = useState(!customer);
 
   useEffect(() => {
-    const init = async () => {
-      if (useCustomersStore.getState().customers.length === 0) {
-        await fetchCustomers();
-      }
-      if (id) {
-        fetchCustomerDetails(id); // load notes/timeline in background
-      }
-      setIsInitializing(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!id) return;
+    if (!useCustomer(id)) {
+      setIsLoading(true);
+    }
+    Promise.all([
+      fetchCustomer(id),
+      fetchCustomerDetails(id),
+    ]).finally(() => {
+      setIsLoading(false);
+    });
+  }, [id, fetchCustomer, fetchCustomerDetails]);
+
+  if (isLoading && !customer) return <PageLoader />;
 
   if (!customer) {
-    if (isInitializing) return <PageLoader />;
     return (
       <EmptyState
         icon={UserRound}

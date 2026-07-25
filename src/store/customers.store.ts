@@ -18,9 +18,11 @@ interface CustomersState {
   customers: Customer[];
   notesByCustomerId: Record<string, CustomerNote[]>;
   timelineByCustomerId: Record<string, CustomerTimelineEvent[]>;
+  filesByCustomerId: Record<string, any[]>;
   isLoading: boolean;
 
   fetchCustomers: () => Promise<void>;
+  fetchCustomer: (id: string) => Promise<Customer | null>;
   fetchCustomerDetails: (id: string) => Promise<void>;
   addCustomer: (values: CustomerFormValues) => Promise<Customer>;
   updateCustomer: (id: string, values: CustomerFormValues) => Promise<void>;
@@ -32,6 +34,7 @@ export const useCustomersStore = create<CustomersState>()((set) => ({
   customers: [],
   notesByCustomerId: {},
   timelineByCustomerId: {},
+  filesByCustomerId: {},
   isLoading: false,
 
   fetchCustomers: async () => {
@@ -45,15 +48,38 @@ export const useCustomersStore = create<CustomersState>()((set) => ({
     }
   },
 
+  fetchCustomer: async (id: string) => {
+    try {
+      const res = await apiClient.get(`/customers/${id}`);
+      const fetched: Customer = res.data;
+      if (fetched && fetched.id) {
+        set((state) => {
+          const exists = state.customers.some((c) => c.id === fetched.id);
+          return {
+            customers: exists
+              ? state.customers.map((c) => (c.id === fetched.id ? fetched : c))
+              : [fetched, ...state.customers],
+          };
+        });
+        return fetched;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
   fetchCustomerDetails: async (id: string) => {
     try {
-      const [notesRes, timelineRes] = await Promise.all([
+      const [notesRes, timelineRes, filesRes] = await Promise.all([
         apiClient.get(`/customers/${id}/notes`).catch(() => ({ data: [] })),
         apiClient.get(`/customers/${id}/timeline`).catch(() => ({ data: [] })),
+        apiClient.get(`/customers/${id}/files`).catch(() => ({ data: [] })),
       ]);
       set((state) => ({
-        notesByCustomerId: { ...state.notesByCustomerId, [id]: notesRes.data },
-        timelineByCustomerId: { ...state.timelineByCustomerId, [id]: timelineRes.data },
+        notesByCustomerId: { ...state.notesByCustomerId, [id]: Array.isArray(notesRes.data) ? notesRes.data : [] },
+        timelineByCustomerId: { ...state.timelineByCustomerId, [id]: Array.isArray(timelineRes.data) ? timelineRes.data : [] },
+        filesByCustomerId: { ...state.filesByCustomerId, [id]: Array.isArray(filesRes.data) ? filesRes.data : [] },
       }));
     } catch {
       // Ignore

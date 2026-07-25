@@ -3,8 +3,8 @@ import type { LucideIcon } from 'lucide-react';
 import { Card } from '@/components/cards/Card';
 import { Button } from '@/components/buttons/Button';
 import { EmptyState } from '@/components/common/EmptyState';
-import { CUSTOMER_FILES } from '@/mock/customers.mock';
 import type { CustomerFileType } from '@/types/customer.types';
+import { useCustomersStore } from '@/store/customers.store';
 import { toast } from '@/store/toast.store';
 import { formatDate } from '@/utils/format';
 
@@ -21,7 +21,7 @@ const FILE_ICON: Record<CustomerFileType, LucideIcon> = {
 };
 
 export function FilesTab({ customerId }: FilesTabProps) {
-  const files = CUSTOMER_FILES[customerId] ?? [];
+  const files = useCustomersStore((state) => state.filesByCustomerId[customerId] ?? []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -45,7 +45,7 @@ export function FilesTab({ customerId }: FilesTabProps) {
         <Card noPadding>
           <ul className="divide-y divide-border">
             {files.map((file) => {
-              const Icon = FILE_ICON[file.fileType];
+              const Icon = (file.fileType && FILE_ICON[file.fileType as CustomerFileType]) || File;
               return (
                 <li key={file.id} className="flex items-center gap-3 px-5 py-3.5">
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">

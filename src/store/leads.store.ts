@@ -8,6 +8,7 @@ interface LeadsState {
   isLoading: boolean;
 
   fetchLeads: () => Promise<void>;
+  fetchLead: (id: string) => Promise<Lead | null>;
   fetchLeadActivity: (id: string) => Promise<void>;
   addLead: (values: LeadFormValues) => Promise<Lead>;
   updateLead: (id: string, values: LeadFormValues) => Promise<void>;
@@ -33,11 +34,33 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     }
   },
 
+  fetchLead: async (id: string) => {
+    try {
+      const res = await apiClient.get(`/leads/${id}`);
+      const fetched: Lead = res.data;
+      if (fetched && fetched.id) {
+        set((state) => {
+          const exists = state.leads.some((l) => l.id === fetched.id);
+          return {
+            leads: exists
+              ? state.leads.map((l) => (l.id === fetched.id ? fetched : l))
+              : [fetched, ...state.leads],
+          };
+        });
+        return fetched;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
   fetchLeadActivity: async (id: string) => {
     try {
       const res = await apiClient.get(`/leads/${id}/activity`);
+      const data = Array.isArray(res.data) ? res.data : [];
       set((state) => ({
-        activityByLeadId: { ...state.activityByLeadId, [id]: res.data },
+        activityByLeadId: { ...state.activityByLeadId, [id]: data },
       }));
     } catch {
       // Ignore

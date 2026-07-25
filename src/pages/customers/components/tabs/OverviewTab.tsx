@@ -42,7 +42,7 @@ export function OverviewTab({ customer }: OverviewTabProps) {
           </span>
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">Tags</p>
-            {customer.tags.length > 0 ? (
+            {customer.tags && customer.tags.length > 0 ? (
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {customer.tags.map((tag) => (
                   <Badge key={tag} tone="neutral">

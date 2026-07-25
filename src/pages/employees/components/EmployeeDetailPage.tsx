@@ -32,35 +32,31 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const employee = useEmployee(id);
-  const fetchEmployees = useEmployeesStore((state) => state.fetchEmployees);
+  const fetchEmployee = useEmployeesStore((state) => state.fetchEmployee);
   const fetchEmployeeDetails = useEmployeesStore((state) => state.fetchEmployeeDetails);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
-  // Only show loader on direct URL navigation (store is empty on mount)
-  const [isInitializing, setIsInitializing] = useState(
-    () => useEmployeesStore.getState().employees.length === 0,
-  );
+  const [isLoading, setIsLoading] = useState(!employee);
 
   useEffect(() => {
-    const init = async () => {
-      if (useEmployeesStore.getState().employees.length === 0) {
-        await fetchEmployees();
-      }
-      if (id) {
-        fetchEmployeeDetails(id); // load attendance/performance in background
-      }
-      setIsInitializing(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!id) return;
+    if (!useEmployee(id)) {
+      setIsLoading(true);
+    }
+    Promise.all([
+      fetchEmployee(id),
+      fetchEmployeeDetails(id),
+    ]).finally(() => {
+      setIsLoading(false);
+    });
+  }, [id, fetchEmployee, fetchEmployeeDetails]);
+
+  if (isLoading && !employee) return <PageLoader />;
 
   if (!employee) {
-    if (isInitializing) return <PageLoader />;
     return (
       <EmptyState
         icon={UserRound}

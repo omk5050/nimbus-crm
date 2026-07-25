@@ -22,16 +22,19 @@ const compactNumberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 });
 
-export function formatCurrency(value: number): string {
+export function formatCurrency(value?: number | null): string {
+  if (value == null || isNaN(value)) return '$0';
   return currencyFormatter.format(value);
 }
 
 /** e.g. 284650 -> "$284.7K" — used where space is tight (chart axes, tooltips). */
-export function formatCompactCurrency(value: number): string {
+export function formatCompactCurrency(value?: number | null): string {
+  if (value == null || isNaN(value)) return '$0';
   return compactCurrencyFormatter.format(value);
 }
 
-export function formatCompactNumber(value: number): string {
+export function formatCompactNumber(value?: number | null): string {
+  if (value == null || isNaN(value)) return '0';
   return compactNumberFormatter.format(value);
 }
 

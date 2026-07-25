@@ -24,7 +24,7 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lead = useLead(id);
-  const fetchLeads = useLeadsStore((state) => state.fetchLeads);
+  const fetchLead = useLeadsStore((state) => state.fetchLead);
   const fetchLeadActivity = useLeadsStore((state) => state.fetchLeadActivity);
   const moveStage = useLeadsStore((state) => state.moveStage);
   const assignOwner = useLeadsStore((state) => state.assignOwner);
@@ -33,32 +33,24 @@ export default function LeadDetailPage() {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-
-  // Local initializing flag — only true on mount when leads haven't been loaded yet
-  // (e.g. direct URL navigation / page refresh). Avoids false "frozen" loader when
-  // simply navigating here from the leads list where data is already in the store.
-  const [isInitializing, setIsInitializing] = useState(
-    () => useLeadsStore.getState().leads.length === 0,
-  );
+  const [isLoading, setIsLoading] = useState(!lead);
 
   useEffect(() => {
-    const init = async () => {
-      // Only call fetchLeads when the store is empty to avoid overwriting
-      // already-loaded data and causing unnecessary re-renders
-      if (useLeadsStore.getState().leads.length === 0) {
-        await fetchLeads();
-      }
-      if (id) {
-        fetchLeadActivity(id); // load activity in the background, no need to await
-      }
-      setIsInitializing(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!id) return;
+    if (!useLead(id)) {
+      setIsLoading(true);
+    }
+    Promise.all([
+      fetchLead(id),
+      fetchLeadActivity(id),
+    ]).finally(() => {
+      setIsLoading(false);
+    });
+  }, [id, fetchLead, fetchLeadActivity]);
+
+  if (isLoading && !lead) return <PageLoader />;
 
   if (!lead) {
-    if (isInitializing) return <PageLoader />;
     return (
       <EmptyState
         icon={Target}

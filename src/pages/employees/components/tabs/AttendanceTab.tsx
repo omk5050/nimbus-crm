@@ -32,7 +32,7 @@ export function AttendanceTab({ employeeId }: AttendanceTabProps) {
           <p className="text-sm font-medium text-card-foreground">Today</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {todayRecord
-              ? `Marked ${ATTENDANCE_STATUS_LABEL[todayRecord.status]}${todayRecord.checkIn ? ` · in at ${todayRecord.checkIn}` : ''}`
+              ? `Marked ${ATTENDANCE_STATUS_LABEL[todayRecord.status] ?? todayRecord.status ?? 'Present'}${todayRecord.checkIn ? ` · in at ${todayRecord.checkIn}` : ''}`
               : 'Not yet recorded'}
           </p>
         </div>
@@ -64,8 +64,8 @@ export function AttendanceTab({ employeeId }: AttendanceTabProps) {
                   </span>
                 )}
                 <StatusBadge
-                  label={ATTENDANCE_STATUS_LABEL[record.status]}
-                  tone={ATTENDANCE_STATUS_TONE[record.status]}
+                  label={ATTENDANCE_STATUS_LABEL[record.status] ?? record.status ?? 'Present'}
+                  tone={ATTENDANCE_STATUS_TONE[record.status] ?? 'neutral'}
                 />
               </div>
             </li>

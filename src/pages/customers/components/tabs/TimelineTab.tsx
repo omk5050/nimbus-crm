@@ -31,7 +31,7 @@ export function TimelineTab({ customerId }: TimelineTabProps) {
     <Card>
       <ol className="flex flex-col">
         {events.map((event, index) => {
-          const Icon = EVENT_ICON[event.type];
+          const Icon = (event.type && EVENT_ICON[event.type as CustomerTimelineEventType]) || FileText;
           const isLast = index === events.length - 1;
 
           return (
