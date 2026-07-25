@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Clock, Plus, RefreshCw, UserCheck, Utensils, CheckCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/buttons/Button';
-import { Card } from '@/components/common/Card';
+import { Card } from '@/components/cards/Card';
 import { StatusBadge } from '@/components/badges/StatusBadge';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { TextField } from '@/components/inputs/TextField';
