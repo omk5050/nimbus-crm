@@ -97,7 +97,15 @@ export async function updateCustomer(companyId: string, id: string, input: Custo
 
 export async function deleteCustomer(companyId: string, id: string) {
   await assertExists(companyId, id);
-  await prisma.customer.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.customerNote.deleteMany({ where: { customerId: id } }),
+    prisma.customerFile.deleteMany({ where: { customerId: id } }),
+    prisma.customerTimelineEvent.deleteMany({ where: { customerId: id } }),
+    prisma.deal.deleteMany({ where: { customerId: id } }),
+    prisma.quotation.deleteMany({ where: { customerId: id } }),
+    prisma.invoice.deleteMany({ where: { customerId: id } }),
+    prisma.customer.delete({ where: { id } }),
+  ]);
 }
 
 export async function getNotes(companyId: string, customerId: string) {

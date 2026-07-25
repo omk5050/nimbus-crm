@@ -107,10 +107,16 @@ export default function CustomerDetailPage() {
         description={`This removes ${customer.name} (${customer.company}) and their notes and timeline. This can't be undone.`}
         confirmLabel="Delete customer"
         tone="danger"
-        onConfirm={() => {
-          deleteCustomer(customer.id);
-          toast.success('Customer deleted', { description: `${customer.name} was removed.` });
-          navigate(ROUTES.CUSTOMERS);
+        onConfirm={async () => {
+          try {
+            await deleteCustomer(customer.id);
+            toast.success('Customer deleted', { description: `${customer.name} was removed.` });
+            navigate(ROUTES.CUSTOMERS);
+          } catch (err: any) {
+            toast.error('Failed to delete customer', { description: err.response?.data?.message || 'Delete operation failed.' });
+          } finally {
+            setIsDeleteOpen(false);
+          }
         }}
       />
     </div>

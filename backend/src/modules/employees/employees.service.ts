@@ -81,11 +81,7 @@ export async function updateEmployee(companyId: string, id: string, input: Emplo
 
 export async function deleteEmployee(companyId: string, id: string) {
   await assertExists(companyId, id);
-  // Soft delete — set status to terminated
-  return prisma.employee.update({
-    where: { id },
-    data: { status: 'terminated' },
-  });
+  await prisma.employee.delete({ where: { id } });
 }
 
 export async function getAttendance(companyId: string, employeeId: string) {

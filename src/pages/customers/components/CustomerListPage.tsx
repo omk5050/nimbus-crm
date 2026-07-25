@@ -186,11 +186,16 @@ export default function CustomerListPage() {
         }
         confirmLabel="Delete customer"
         tone="danger"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingDelete) return;
-          deleteCustomer(pendingDelete.id);
-          toast.success('Customer deleted', { description: `${pendingDelete.name} was removed.` });
-          setPendingDelete(null);
+          try {
+            await deleteCustomer(pendingDelete.id);
+            toast.success('Customer deleted', { description: `${pendingDelete.name} was removed.` });
+          } catch (err: any) {
+            toast.error('Failed to delete customer', { description: err.response?.data?.message || 'Delete operation failed.' });
+          } finally {
+            setPendingDelete(null);
+          }
         }}
       />
     </div>

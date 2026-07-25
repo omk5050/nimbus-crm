@@ -155,10 +155,16 @@ export default function EmployeeDetailPage() {
         description={`This removes ${employee.name} (${employee.role}) from your workspace. This can't be undone.`}
         confirmLabel="Delete employee"
         tone="danger"
-        onConfirm={() => {
-          deleteEmployee(employee.id);
-          toast.success('Employee deleted', { description: `${employee.name} was removed.` });
-          navigate(ROUTES.EMPLOYEES);
+        onConfirm={async () => {
+          try {
+            await deleteEmployee(employee.id);
+            toast.success('Employee deleted', { description: `${employee.name} was removed.` });
+            navigate(ROUTES.EMPLOYEES);
+          } catch (err: any) {
+            toast.error('Failed to delete employee', { description: err.response?.data?.message || 'Delete operation failed.' });
+          } finally {
+            setIsDeleteOpen(false);
+          }
         }}
       />
     </div>

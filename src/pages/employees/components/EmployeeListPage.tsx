@@ -160,11 +160,16 @@ export default function EmployeeListPage() {
         }
         confirmLabel="Delete employee"
         tone="danger"
-        onConfirm={() => {
+        onConfirm={async () => {
           if (!pendingDelete) return;
-          deleteEmployee(pendingDelete.id);
-          toast.success('Employee deleted', { description: `${pendingDelete.name} was removed.` });
-          setPendingDelete(null);
+          try {
+            await deleteEmployee(pendingDelete.id);
+            toast.success('Employee deleted', { description: `${pendingDelete.name} was removed.` });
+          } catch (err: any) {
+            toast.error('Failed to delete employee', { description: err.response?.data?.message || 'Delete operation failed.' });
+          } finally {
+            setPendingDelete(null);
+          }
         }}
       />
     </div>

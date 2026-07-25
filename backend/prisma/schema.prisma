@@ -415,7 +415,7 @@ model Deal {
   updatedAt         DateTime  @updatedAt
 
   workspace  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer   Customer @relation(fields: [customerId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@map("deals")
 }
@@ -435,7 +435,7 @@ model Quotation {
   updatedAt    DateTime        @updatedAt
 
   workspace Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer  Customer      @relation(fields: [customerId], references: [id])
+  customer  Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items     QuotationItem[]
 
   @@map("quotations")
@@ -469,7 +469,7 @@ model Invoice {
   updatedAt     DateTime      @updatedAt
 
   workspace Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  customer  Customer      @relation(fields: [customerId], references: [id])
+  customer  Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items     InvoiceItem[]
   payments  Payment[]
 
