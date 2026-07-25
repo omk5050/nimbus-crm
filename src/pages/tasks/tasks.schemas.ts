@@ -6,6 +6,6 @@ export const taskFormSchema = z.object({
   assignee: z.string().min(1, 'Assign this task to someone'),
   relatedTo: z.string(),
   dueDate: z.string().min(1, 'Set a due date'),
-  priority: z.enum(['low', 'medium', 'high'], 'Select a priority'),
-  status: z.enum(['todo', 'in_progress', 'in_review', 'done'], 'Select a status'),
+  priority: z.enum(['low', 'medium', 'high']),
+  status: z.enum(['todo', 'in_progress', 'in_review', 'done']),
 });
