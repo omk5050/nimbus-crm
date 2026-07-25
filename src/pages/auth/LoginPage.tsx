@@ -18,10 +18,10 @@ interface LocationState {
 }
 
 export default function LoginPage() {
-  const login = useAuthStore((state) => state.login);
+  const { login, error: storeError, clearError } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -32,8 +32,11 @@ export default function LoginPage() {
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
+  const errorMessage = storeError || localErrorMessage;
+
   async function onSubmit(values: LoginFormValues) {
-    setErrorMessage(null);
+    clearError();
+    setLocalErrorMessage(null);
     try {
       await login({
         ...values,
@@ -43,10 +46,7 @@ export default function LoginPage() {
       navigate(redirectTo, { replace: true });
     } catch (err: any) {
       if (!err?.response) {
-        setErrorMessage('Server is waking up or deploying on Render. Please wait 10-15 seconds and try clicking Sign In again.');
-      } else {
-        const msg = err.response.data?.message || 'Invalid email or password. Please check your credentials and try again.';
-        setErrorMessage(msg);
+        setLocalErrorMessage('Server is waking up or deploying on Render. Please wait 10-15 seconds and try clicking Sign In again.');
       }
     }
   }

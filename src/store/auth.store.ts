@@ -7,25 +7,30 @@ interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
   isSubmitting: boolean;
+  error: string | null;
 
   login: (values: LoginFormValues) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
+  clearError: () => void;
 }
-
-const hasToken = () => Boolean(typeof window !== 'undefined' && localStorage.getItem('nimbus_access_token'));
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: hasToken(),
+      isAuthenticated: false,
       user: null,
       isSubmitting: false,
+      error: null,
+
+      clearError: () => set({ error: null }),
 
       login: async (values) => {
-        set({ isSubmitting: true });
+        console.time('login');
+        set({ isSubmitting: true, error: null });
         try {
           const res = await apiClient.post('/auth/login', values);
+          console.timeEnd('login');
           const { user, accessToken, tokens } = res.data;
           const token = accessToken || tokens?.accessToken;
 
@@ -33,16 +38,26 @@ export const useAuthStore = create<AuthState>()(
             localStorage.setItem('nimbus_access_token', token);
           }
 
-          set({ isAuthenticated: true, user, isSubmitting: false });
-        } catch (error) {
-          set({ isSubmitting: false });
+          set({ isAuthenticated: true, user, isSubmitting: false, error: null });
+        } catch (error: any) {
+          console.timeEnd('login');
+          const errorMessage =
+            error.response?.data?.message ??
+            (error.code === 'ECONNABORTED'
+              ? 'Request timed out. Please try again.'
+              : 'Login failed. Please check your credentials.');
+
+          set({
+            isSubmitting: false,
+            error: errorMessage,
+          });
           throw error;
         }
       },
 
       logout: () => {
         localStorage.removeItem('nimbus_access_token');
-        set({ isAuthenticated: false, user: null, isSubmitting: false });
+        set({ isAuthenticated: false, user: null, isSubmitting: false, error: null });
       },
 
       fetchMe: async () => {
