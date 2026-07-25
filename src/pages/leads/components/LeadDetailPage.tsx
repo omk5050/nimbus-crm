@@ -24,7 +24,6 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lead = useLead(id);
-  const isLoading = useLeadsStore((state) => state.isLoading);
   const fetchLeads = useLeadsStore((state) => state.fetchLeads);
   const fetchLeadActivity = useLeadsStore((state) => state.fetchLeadActivity);
   const moveStage = useLeadsStore((state) => state.moveStage);
@@ -35,21 +34,31 @@ export default function LeadDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  // Ensure leads list is loaded (covers direct URL navigation / page refresh)
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+  // Local initializing flag — only true on mount when leads haven't been loaded yet
+  // (e.g. direct URL navigation / page refresh). Avoids false "frozen" loader when
+  // simply navigating here from the leads list where data is already in the store.
+  const [isInitializing, setIsInitializing] = useState(
+    () => useLeadsStore.getState().leads.length === 0,
+  );
 
   useEffect(() => {
-    if (id) {
-      fetchLeadActivity(id);
-    }
-  }, [id, fetchLeadActivity]);
+    const init = async () => {
+      // Only call fetchLeads when the store is empty to avoid overwriting
+      // already-loaded data and causing unnecessary re-renders
+      if (useLeadsStore.getState().leads.length === 0) {
+        await fetchLeads();
+      }
+      if (id) {
+        fetchLeadActivity(id); // load activity in the background, no need to await
+      }
+      setIsInitializing(false);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!lead) {
-    if (isLoading) {
-      return <PageLoader />;
-    }
+    if (isInitializing) return <PageLoader />;
     return (
       <EmptyState
         icon={Target}

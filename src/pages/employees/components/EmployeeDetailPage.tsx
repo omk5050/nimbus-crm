@@ -32,7 +32,6 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const employee = useEmployee(id);
-  const isLoading = useEmployeesStore((state) => state.isLoading);
   const fetchEmployees = useEmployeesStore((state) => state.fetchEmployees);
   const fetchEmployeeDetails = useEmployeesStore((state) => state.fetchEmployeeDetails);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
@@ -40,22 +39,28 @@ export default function EmployeeDetailPage() {
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [detailsFetched, setDetailsFetched] = useState(false);
 
-  // Ensure employees list is loaded (covers direct URL navigation / page refresh)
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+  // Only show loader on direct URL navigation (store is empty on mount)
+  const [isInitializing, setIsInitializing] = useState(
+    () => useEmployeesStore.getState().employees.length === 0,
+  );
 
-  // Fetch attendance and performance once the employee id is known
   useEffect(() => {
-    if (id && !detailsFetched) {
-      fetchEmployeeDetails(id).then(() => setDetailsFetched(true));
-    }
-  }, [id, fetchEmployeeDetails, detailsFetched]);
+    const init = async () => {
+      if (useEmployeesStore.getState().employees.length === 0) {
+        await fetchEmployees();
+      }
+      if (id) {
+        fetchEmployeeDetails(id); // load attendance/performance in background
+      }
+      setIsInitializing(false);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!employee) {
-    if (isLoading) return <PageLoader />;
+    if (isInitializing) return <PageLoader />;
     return (
       <EmptyState
         icon={UserRound}
