@@ -1,6 +1,6 @@
 import type { EntityId } from '@/types/common.types';
 
-export type NotificationType = 'lead' | 'deal' | 'invoice' | 'task' | 'customer' | 'system' | 'table';
+export type NotificationType = 'lead' | 'deal' | 'invoice' | 'task' | 'customer' | 'system';
 
 export interface Notification {
   id: EntityId;

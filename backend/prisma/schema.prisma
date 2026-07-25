@@ -156,13 +156,6 @@ enum TaskPriority {
   high
 }
 
-enum TableStatus {
-  available
-  reserved
-  occupied
-  cleared
-}
-
 enum NotificationType {
   lead
   deal
@@ -170,7 +163,6 @@ enum NotificationType {
   task
   customer
   system
-  table
 }
 
 enum CompanyPlan {
@@ -218,7 +210,6 @@ model Company {
   quotations Quotation[]
   invoices  Invoice[]
   payments  Payment[]
-  tables    Table[]
 
   @@map("companies")
 }
@@ -584,27 +575,4 @@ model UserPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
-}
-
-// ─────────────────────────────────────────────────────────────
-// TABLES & GRACE PERIOD
-// ─────────────────────────────────────────────────────────────
-
-model Table {
-  id                 String      @id @default(uuid()) @map("_id")
-  companyId          String
-  name               String
-  capacity           Int         @default(4)
-  status             TableStatus @default(available)
-  reservedBy         String?
-  reservedAt         DateTime?
-  gracePeriodMinutes Int         @default(15)
-  graceExpiresAt     DateTime?
-  autoClearedAt      DateTime?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-
-  workspace Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@map("tables")
 }
