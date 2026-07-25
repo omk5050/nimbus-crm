@@ -13,9 +13,11 @@ export const taskSchema = z.object({
   ),
 });
 
+export const updateTaskSchema = taskSchema.partial();
+
 export const moveStatusSchema = z.object({
   status: z.preprocess(
-    (val) => (typeof val === 'string' ? val.replace('-', '_') : val),
+    (val) => (typeof val === 'string' ? val.replace(/-/g, '_') : val),
     z.enum(['todo', 'in_progress', 'in_review', 'done']),
   ),
 });
@@ -33,5 +35,6 @@ export const taskListQuerySchema = z.object({
 });
 
 export type TaskInput = z.infer<typeof taskSchema>;
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type MoveStatusInput = z.infer<typeof moveStatusSchema>;
 export type TaskListQuery = z.infer<typeof taskListQuerySchema>;

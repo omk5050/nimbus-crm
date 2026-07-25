@@ -39,7 +39,16 @@ export interface LeadFormValues {
   expectedCloseDate: string;
 }
 
-export type LeadActivityType = 'created' | 'stage-change' | 'owner-change' | 'call' | 'email' | 'meeting' | 'note';
+export type LeadActivityType =
+  | 'created'
+  | 'stage-change'
+  | 'stage_change'
+  | 'owner-change'
+  | 'owner_change'
+  | 'call'
+  | 'email'
+  | 'meeting'
+  | 'note';
 
 export interface LeadActivity {
   id: EntityId;

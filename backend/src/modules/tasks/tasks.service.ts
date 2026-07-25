@@ -51,19 +51,20 @@ export async function createTask(companyId: string, input: TaskInput) {
   });
 }
 
-export async function updateTask(companyId: string, id: string, input: TaskInput) {
+export async function updateTask(companyId: string, id: string, input: Partial<TaskInput>) {
   await assertExists(companyId, id);
+  const data: Record<string, any> = {};
+  if (input.title !== undefined) data.title = input.title;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.assignee !== undefined) data.assignee = input.assignee;
+  if (input.relatedTo !== undefined) data.relatedTo = input.relatedTo;
+  if (input.dueDate !== undefined) data.dueDate = new Date(input.dueDate);
+  if (input.priority !== undefined) data.priority = input.priority;
+  if (input.status !== undefined) data.status = input.status;
+
   return prisma.task.update({
     where: { id },
-    data: {
-      title: input.title,
-      description: input.description ?? null,
-      assignee: input.assignee,
-      relatedTo: input.relatedTo ?? null,
-      dueDate: new Date(input.dueDate),
-      priority: input.priority as any,
-      status: input.status as any,
-    },
+    data,
   });
 }
 

@@ -8,6 +8,7 @@ import { IconButton } from '@/components/buttons/IconButton';
 import { Card, CardHeader } from '@/components/cards/Card';
 import { Select } from '@/components/inputs/Select';
 import { EmptyState } from '@/components/common/EmptyState';
+import { PageLoader } from '@/components/common/PageLoader';
 import { ConfirmDialog } from '@/components/modals/ConfirmDialog';
 import { LeadFormDrawer } from '@/pages/leads/components/LeadFormDrawer';
 import { LeadStageStepper } from '@/pages/leads/components/LeadStageStepper';
@@ -23,6 +24,8 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lead = useLead(id);
+  const isLoading = useLeadsStore((state) => state.isLoading);
+  const fetchLeadActivity = useLeadsStore((state) => state.fetchLeadActivity);
   const moveStage = useLeadsStore((state) => state.moveStage);
   const assignOwner = useLeadsStore((state) => state.assignOwner);
   const deleteLead = useLeadsStore((state) => state.deleteLead);
@@ -31,7 +34,16 @@ export default function LeadDetailPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
+  useEffect(() => {
+    if (id) {
+      fetchLeadActivity(id);
+    }
+  }, [id, fetchLeadActivity]);
+
   if (!lead) {
+    if (isLoading) {
+      return <PageLoader />;
+    }
     return (
       <EmptyState
         icon={Target}

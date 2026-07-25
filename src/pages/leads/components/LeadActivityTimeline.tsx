@@ -13,7 +13,9 @@ interface LeadActivityTimelineProps {
 const ACTIVITY_ICON: Record<LeadActivityType, LucideIcon> = {
   created: Sparkles,
   'stage-change': Briefcase,
+  stage_change: Briefcase,
   'owner-change': UserCog,
+  owner_change: UserCog,
   call: Phone,
   email: Mail,
   meeting: Video,
@@ -31,7 +33,7 @@ export function LeadActivityTimeline({ leadId }: LeadActivityTimelineProps) {
     <Card>
       <ol className="flex flex-col">
         {events.map((event, index) => {
-          const Icon = ACTIVITY_ICON[event.type];
+          const Icon = (event.type && ACTIVITY_ICON[event.type]) || FileText;
           const isLast = index === events.length - 1;
 
           return (

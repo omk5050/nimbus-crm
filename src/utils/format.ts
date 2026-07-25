@@ -48,17 +48,26 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 });
 
-export function formatDate(iso: string): string {
-  return dateFormatter.format(new Date(iso));
+export function formatDate(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return dateFormatter.format(d);
 }
 
-export function formatDateTime(iso: string): string {
-  return dateTimeFormatter.format(new Date(iso));
+export function formatDateTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return dateTimeFormatter.format(d);
 }
 
 /** "3h ago", "12m ago", "Yesterday", falling back to a short date beyond 6 days. */
-export function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+export function formatRelativeTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  const diffMs = Date.now() - d.getTime();
   const minutes = Math.round(diffMs / 60_000);
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;

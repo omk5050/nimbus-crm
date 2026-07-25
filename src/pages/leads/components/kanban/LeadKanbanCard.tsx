@@ -23,7 +23,6 @@ export function LeadKanbanCard({ lead, isDragging, onDragStart, onDragEnd, onCli
     >
       <motion.div
         layout
-        layoutId={lead.id}
         onClick={onClick}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: isDragging ? 0.4 : 1, y: 0 }}

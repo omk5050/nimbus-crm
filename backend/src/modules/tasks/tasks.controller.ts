@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import * as svc from './tasks.service';
-import { taskSchema, moveStatusSchema, taskListQuerySchema } from './tasks.schema';
+import { taskSchema, updateTaskSchema, moveStatusSchema, taskListQuerySchema } from './tasks.schema';
 import { paginated } from '@/utils/pagination';
 
 export async function list(req: Request, res: Response) {
@@ -18,7 +18,7 @@ export async function create(req: Request, res: Response) {
 }
 
 export async function update(req: Request, res: Response) {
-  res.json(await svc.updateTask(req.auth.companyId, req.params.id, taskSchema.parse(req.body)));
+  res.json(await svc.updateTask(req.auth.companyId, req.params.id, updateTaskSchema.parse(req.body)));
 }
 
 export async function remove(req: Request, res: Response) {

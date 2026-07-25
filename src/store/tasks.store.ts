@@ -57,7 +57,7 @@ export const useTasksStore = create<TasksState>()((set, get) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
     try {
-      await apiClient.put(`/tasks/${id}`, { status });
+      await apiClient.patch(`/tasks/${id}/status`, { status });
     } catch {
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === id ? task : t)),
@@ -74,7 +74,7 @@ export const useTasksStore = create<TasksState>()((set, get) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
     try {
-      await apiClient.put(`/tasks/${id}`, { status: nextStatus });
+      await apiClient.patch(`/tasks/${id}/toggle-done`);
     } catch {
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === id ? task : t)),
