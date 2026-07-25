@@ -6,7 +6,6 @@ import {
   ClipboardList,
   Users,
   BarChart3,
-  Utensils,
   Bell,
   Settings,
 } from 'lucide-react';
@@ -26,7 +25,6 @@ export const PRIMARY_NAV: NavItem[] = [
   { id: 'tasks', label: 'Tasks', path: ROUTES.TASKS, icon: ClipboardList, matchPrefix: true },
   { id: 'employees', label: 'Employees', path: ROUTES.EMPLOYEES, icon: Users, matchPrefix: true },
   { id: 'reports', label: 'Reports', path: ROUTES.REPORTS, icon: BarChart3, matchPrefix: true },
-  { id: 'tables', label: 'Tables & Grace', path: ROUTES.TABLES, icon: Utensils, matchPrefix: true },
   {
     id: 'notifications',
     label: 'Notifications',

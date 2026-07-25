@@ -18,7 +18,6 @@ const SalesPage = lazy(() => import('@/pages/sales/SalesPage'));
 const EmployeesPage = lazy(() => import('@/pages/employees/EmployeesPage'));
 const TasksPage = lazy(() => import('@/pages/tasks/TasksPage'));
 const ReportsPage = lazy(() => import('@/pages/reports/ReportsPage'));
-const TablesPage = lazy(() => import('@/pages/tables/TablesPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
 const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 
@@ -49,7 +48,6 @@ export function AppRouter() {
             <Route path={`${ROUTES.EMPLOYEES}/*`} element={<EmployeesPage />} />
             <Route path={`${ROUTES.TASKS}/*`} element={<TasksPage />} />
             <Route path={`${ROUTES.REPORTS}/*`} element={<ReportsPage />} />
-            <Route path={ROUTES.TABLES} element={<TablesPage />} />
             <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
             <Route path={`${ROUTES.SETTINGS}/*`} element={<SettingsPage />} />
           </Route>
