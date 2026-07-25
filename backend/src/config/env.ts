@@ -1,8 +1,12 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.trim();
+}
+
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_URL: z.string().trim().min(1, 'DATABASE_URL is required'),
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
