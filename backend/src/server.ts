@@ -20,6 +20,8 @@ import notificationsRouter from '@/modules/notifications/notifications.router';
 import dashboardRouter from '@/modules/dashboard/dashboard.router';
 import reportsRouter from '@/modules/reports/reports.router';
 import settingsRouter from '@/modules/settings/settings.router';
+import { tablesRouter } from '@/modules/tables/tables.router';
+import { checkGracePeriodExpirations } from '@/modules/tables/tables.service';
 
 const app = express();
 
@@ -69,6 +71,7 @@ app.use(`${API}/notifications`, notificationsRouter);
 app.use(`${API}/dashboard`, dashboardRouter);
 app.use(`${API}/reports`, reportsRouter);
 app.use(`${API}/settings`, settingsRouter);
+app.use(`${API}/tables`, tablesRouter);
 
 // ─── Static Frontend Serving (Single-Link Render Deployment) ──
 // Detect frontend static build directory across different run locations
@@ -109,6 +112,12 @@ app.listen(env.PORT, () => {
   if (clientPath) {
     console.log(`   Frontend    : http://localhost:${env.PORT} (Single-Link Deployment)\n`);
   }
+
+  // Start automated table grace period expiration worker (runs every 10 seconds)
+  setInterval(() => {
+    checkGracePeriodExpirations();
+  }, 10_000);
+  console.log('⏰ Table Grace Period Expiration Worker started (10s interval)');
 });
 
 export default app;

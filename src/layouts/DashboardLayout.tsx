@@ -15,6 +15,8 @@ import { Topbar } from '@/components/layout/Topbar';
 import { Footer } from '@/components/layout/Footer';
 import { cn } from '@/utils/cn';
 
+import { useTablesStore } from '@/store/tables.store';
+
 export function DashboardLayout() {
   const isSidebarCollapsed = useUiStore((state) => state.isSidebarCollapsed);
   const toggleSidebarCollapsed = useUiStore((state) => state.toggleSidebarCollapsed);
@@ -28,6 +30,15 @@ export function DashboardLayout() {
     useEmployeesStore.getState().fetchEmployees();
     useNotificationsStore.getState().fetchNotifications();
     useCompanyStore.getState().fetchCompany();
+    useTablesStore.getState().fetchTables();
+
+    // Start 10-second polling for real-time notifications & table status sync
+    const interval = setInterval(() => {
+      useNotificationsStore.getState().pollNotifications();
+      useTablesStore.getState().fetchTables();
+    }, 10_000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Key on the top-level segment only (e.g. "/employees") so that navigating

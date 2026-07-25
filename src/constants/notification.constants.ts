@@ -1,4 +1,4 @@
-import { Briefcase, CheckCircle2, Contact, Receipt, Settings, Target } from 'lucide-react';
+import { Briefcase, CheckCircle2, Contact, Receipt, Settings, Target, Utensils } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { SelectOption } from '@/types/common.types';
 import type { NotificationType } from '@/types/notification.types';
@@ -10,6 +10,7 @@ export const NOTIFICATION_TYPE_LABEL: Record<NotificationType, string> = {
   task: 'Tasks',
   customer: 'Customers',
   system: 'System',
+  table: 'Tables',
 };
 
 export const NOTIFICATION_TYPE_ICON: Record<NotificationType, LucideIcon> = {
@@ -19,6 +20,7 @@ export const NOTIFICATION_TYPE_ICON: Record<NotificationType, LucideIcon> = {
   task: CheckCircle2,
   customer: Contact,
   system: Settings,
+  table: Utensils,
 };
 
 export const NOTIFICATION_TYPE_OPTIONS: SelectOption<NotificationType>[] = (

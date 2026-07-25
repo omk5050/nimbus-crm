@@ -8,6 +8,7 @@ interface NotificationsState {
   isLoading: boolean;
 
   fetchNotifications: () => Promise<void>;
+  pollNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
@@ -26,6 +27,37 @@ export const useNotificationsStore = create<NotificationsState>()((set) => ({
       set({ notifications: data, isLoading: false });
     } catch {
       set({ isLoading: false });
+    }
+  },
+
+  pollNotifications: async () => {
+    try {
+      const res = await apiClient.get('/notifications');
+      const data: Notification[] = res.data.data || res.data || [];
+      const currentNotifications = useNotificationsStore.getState().notifications;
+
+      const previousIds = new Set(currentNotifications.map((n) => n.id));
+      const newlyAddedUnread = data.filter((n) => !n.isRead && !previousIds.has(n.id));
+
+      set({ notifications: data });
+
+      if (newlyAddedUnread.length > 0) {
+        const { usePreferencesStore } = await import('@/store/preferences.store');
+        const prefs = usePreferencesStore.getState();
+
+        if (prefs.audioChimesEnabled) {
+          const { playNotificationChime } = await import('@/utils/notificationSound');
+          playNotificationChime();
+        }
+
+        if (prefs.desktopNotificationsEnabled) {
+          const { sendDesktopNotification } = await import('@/utils/nativeNotifications');
+          const latest = newlyAddedUnread[0];
+          sendDesktopNotification(latest.title, latest.description);
+        }
+      }
+    } catch {
+      // Ignore background poll errors
     }
   },
 
