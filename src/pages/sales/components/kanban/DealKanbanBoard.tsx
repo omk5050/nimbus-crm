@@ -18,6 +18,7 @@ export function DealKanbanBoard({ deals, onCardClick }: DealKanbanBoardProps) {
 
   function handleDragStartCard(event: DragEvent<HTMLDivElement>, dealId: string) {
     event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', dealId);
     setDraggingId(dealId);
   }
 
@@ -28,7 +29,8 @@ export function DealKanbanBoard({ deals, onCardClick }: DealKanbanBoardProps) {
 
   function handleDropColumn(event: DragEvent<HTMLDivElement>, stage: DealStage) {
     event.preventDefault();
-    if (draggingId) moveDealStage(draggingId, stage);
+    const id = event.dataTransfer.getData('text/plain') || draggingId;
+    if (id) moveDealStage(id, stage);
     setDraggingId(null);
     setDropTargetStage(null);
   }
@@ -46,9 +48,13 @@ export function DealKanbanBoard({ deals, onCardClick }: DealKanbanBoardProps) {
           onDragEndCard={handleDragEndCard}
           onDragOverColumn={(event) => {
             event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
             if (draggingId) setDropTargetStage(stage);
           }}
-          onDragLeaveColumn={() => setDropTargetStage((current) => (current === stage ? null : current))}
+          onDragLeaveColumn={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+            setDropTargetStage((current) => (current === stage ? null : current));
+          }}
           onDropColumn={(event) => handleDropColumn(event, stage)}
           onCardClick={onCardClick}
         />

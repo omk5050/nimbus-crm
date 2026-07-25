@@ -99,7 +99,7 @@ export const useSalesStore = create<SalesState>()((set, get) => ({
     }));
 
     try {
-      await apiClient.put(`/sales/deals/${id}`, { stage });
+      await apiClient.patch(`/sales/deals/${id}/stage`, { stage });
     } catch {
       set((state) => ({
         deals: state.deals.map((d) => (d.id === id ? deal : d)),
@@ -134,7 +134,7 @@ export const useSalesStore = create<SalesState>()((set, get) => ({
       quotations: state.quotations.map((q) => (q.id === id ? { ...q, status } : q)),
     }));
     try {
-      await apiClient.put(`/sales/quotations/${id}`, { status });
+      await apiClient.patch(`/sales/quotations/${id}/status`, { status });
     } catch {
       set((state) => ({
         quotations: state.quotations.map((q) => (q.id === id ? quotation : q)),
@@ -169,7 +169,7 @@ export const useSalesStore = create<SalesState>()((set, get) => ({
       invoices: state.invoices.map((inv) => (inv.id === id ? { ...inv, status } : inv)),
     }));
     try {
-      await apiClient.put(`/sales/invoices/${id}`, { status });
+      await apiClient.patch(`/sales/invoices/${id}/status`, { status });
     } catch {
       set((state) => ({
         invoices: state.invoices.map((inv) => (inv.id === id ? invoice : inv)),

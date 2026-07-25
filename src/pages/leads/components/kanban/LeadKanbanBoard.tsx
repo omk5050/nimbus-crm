@@ -22,6 +22,7 @@ export function LeadKanbanBoard({ leads, onCardClick }: LeadKanbanBoardProps) {
 
   function handleDragStartCard(event: DragEvent<HTMLDivElement>, leadId: string) {
     event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', leadId);
     setDraggingId(leadId);
   }
 
@@ -32,7 +33,8 @@ export function LeadKanbanBoard({ leads, onCardClick }: LeadKanbanBoardProps) {
 
   function handleDropColumn(event: DragEvent<HTMLDivElement>, stage: LeadStage) {
     event.preventDefault();
-    if (draggingId) moveStage(draggingId, stage);
+    const id = event.dataTransfer.getData('text/plain') || draggingId;
+    if (id) moveStage(id, stage);
     setDraggingId(null);
     setDropTargetStage(null);
   }
@@ -50,9 +52,13 @@ export function LeadKanbanBoard({ leads, onCardClick }: LeadKanbanBoardProps) {
           onDragEndCard={handleDragEndCard}
           onDragOverColumn={(event) => {
             event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
             if (draggingId) setDropTargetStage(stage);
           }}
-          onDragLeaveColumn={() => setDropTargetStage((current) => (current === stage ? null : current))}
+          onDragLeaveColumn={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+            setDropTargetStage((current) => (current === stage ? null : current));
+          }}
           onDropColumn={(event) => handleDropColumn(event, stage)}
           onCardClick={onCardClick}
         />

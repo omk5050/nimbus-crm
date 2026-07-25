@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft, Mail, MapPin, Pencil, Phone, Target, Trash2 } from 'lucide-react';
 import { Avatar } from '@/components/common/Avatar';

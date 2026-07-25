@@ -81,7 +81,7 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     }));
 
     try {
-      await apiClient.put(`/leads/${id}`, { stage });
+      await apiClient.patch(`/leads/${id}/stage`, { stage });
     } catch {
       // Rollback on error
       set((state) => ({
@@ -100,7 +100,7 @@ export const useLeadsStore = create<LeadsState>()((set, get) => ({
     }));
 
     try {
-      await apiClient.put(`/leads/${id}`, { owner });
+      await apiClient.patch(`/leads/${id}/owner`, { owner });
     } catch {
       set((state) => ({
         leads: state.leads.map((l) => (l.id === id ? lead : l)),
