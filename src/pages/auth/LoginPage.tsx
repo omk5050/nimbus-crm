@@ -89,8 +89,40 @@ export default function LoginPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Sign in with your database credentials (Demo: <code className="font-mono text-xs">jordan@nimbus.example.com</code> / <code className="font-mono text-xs">Password123!</code>).
+        Sign in with your workspace credentials or test roles (Password for all: <code className="font-mono text-xs">Password123!</code>).
       </p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="text-muted-foreground font-medium">Quick test fill:</span>
+        <button
+          type="button"
+          onClick={() => { setValue('email', 'admin@nimbus.example.com'); setValue('password', 'Password123!'); }}
+          className="rounded border border-border bg-muted/40 px-2 py-1 font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+        >
+          Admin
+        </button>
+        <button
+          type="button"
+          onClick={() => { setValue('email', 'manager@nimbus.example.com'); setValue('password', 'Password123!'); }}
+          className="rounded border border-border bg-muted/40 px-2 py-1 font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+        >
+          Manager
+        </button>
+        <button
+          type="button"
+          onClick={() => { setValue('email', 'sales@nimbus.example.com'); setValue('password', 'Password123!'); }}
+          className="rounded border border-border bg-muted/40 px-2 py-1 font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+        >
+          Sales Rep
+        </button>
+        <button
+          type="button"
+          onClick={() => { setValue('email', 'support@nimbus.example.com'); setValue('password', 'Password123!'); }}
+          className="rounded border border-border bg-muted/40 px-2 py-1 font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+        >
+          Support
+        </button>
+      </div>
 
       {savedAccount && (
         <div className="mt-5 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3.5">

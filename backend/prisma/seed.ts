@@ -44,40 +44,88 @@ async function main() {
     },
   });
 
-  // ─── Admin Employee & User ────────────────────────────────────
-  const adminEmployee = await prisma.employee.upsert({
-    where: { email: 'jordan@nimbus.example.com' },
-    update: {},
-    create: {
-      companyId: company.id,
+  // ─── Test Accounts (All 4 System Roles) ─────────────────────
+  const TEST_PASSWORD_HASH = await bcrypt.hash('Password123!', 10);
+
+  const testUsersData = [
+    {
+      email: 'admin@nimbus.example.com',
       name: 'Jordan Reyes',
-      email: 'jordan@nimbus.example.com',
-      phone: '+1 (555) 000-0000',
-      role: 'Sales Director',
-      department: 'Sales',
-      status: 'active',
-      hireDate: new Date('2021-03-15'),
+      role: 'admin' as const,
+      department: 'Sales' as const,
+      title: 'System Admin',
       avatarColor: '#6366f1',
     },
-  });
-
-  const PASSWORD = await bcrypt.hash('Password123!', 12);
-  await prisma.user.upsert({
-    where: { employeeId: adminEmployee.id },
-    update: { passwordHash: PASSWORD },
-    create: {
-      employeeId: adminEmployee.id,
-      passwordHash: PASSWORD,
-      role: 'admin',
-      hasAccess: true,
+    {
+      email: 'jordan@nimbus.example.com', // Demo alias for Admin
+      name: 'Jordan Reyes',
+      role: 'admin' as const,
+      department: 'Sales' as const,
+      title: 'Sales Director',
+      avatarColor: '#6366f1',
     },
-  });
+    {
+      email: 'manager@nimbus.example.com',
+      name: 'Marcus Vance',
+      role: 'manager' as const,
+      department: 'Engineering' as const,
+      title: 'Engineering Manager',
+      avatarColor: '#10b981',
+    },
+    {
+      email: 'sales@nimbus.example.com',
+      name: 'Sarah Chen',
+      role: 'sales_rep' as const,
+      department: 'Sales' as const,
+      title: 'Senior Sales Representative',
+      avatarColor: '#f59e0b',
+    },
+    {
+      email: 'support@nimbus.example.com',
+      name: 'David Miller',
+      role: 'support' as const,
+      department: 'Support' as const,
+      title: 'Customer Support Lead',
+      avatarColor: '#3b82f6',
+    },
+  ];
 
-  console.log('✅ Admin user account ready');
-  console.log('\n🎉 Initialization complete! Database is clean and empty.');
-  console.log('\n📋 Login credentials:');
-  console.log('   Email   : jordan@nimbus.example.com');
-  console.log('   Password: Password123!\n');
+  for (const account of testUsersData) {
+    const employee = await prisma.employee.upsert({
+      where: { email: account.email },
+      update: { role: account.title, department: account.department },
+      create: {
+        companyId: company.id,
+        name: account.name,
+        email: account.email,
+        phone: '+1 (555) 019-2834',
+        role: account.title,
+        department: account.department,
+        status: 'active',
+        hireDate: new Date('2022-01-15'),
+        avatarColor: account.avatarColor,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { employeeId: employee.id },
+      update: { passwordHash: TEST_PASSWORD_HASH, role: account.role, hasAccess: true },
+      create: {
+        employeeId: employee.id,
+        passwordHash: TEST_PASSWORD_HASH,
+        role: account.role,
+        hasAccess: true,
+      },
+    });
+  }
+
+  console.log('✅ Seeded Admin, Manager, Sales Rep, and Support test accounts');
+  console.log('\n🎉 Initialization complete! All 4 role accounts ready.');
+  console.log('\n📋 Test Login Credentials (Password for all: Password123!):');
+  console.log('   1. ADMIN    : admin@nimbus.example.com   (or jordan@nimbus.example.com)');
+  console.log('   2. MANAGER  : manager@nimbus.example.com');
+  console.log('   3. SALES REP: sales@nimbus.example.com');
+  console.log('   4. SUPPORT  : support@nimbus.example.com\n');
 }
 
 main()

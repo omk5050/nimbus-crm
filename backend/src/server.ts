@@ -100,8 +100,10 @@ if (clientPath) {
 // ─── Error Handling ───────────────────────────────────────────
 app.use(errorHandler);
 
+import { ensureDefaultAccountsExist } from '@/services/seeder.service';
+
 // ─── Start Server ─────────────────────────────────────────────
-app.listen(env.PORT, () => {
+app.listen(env.PORT, async () => {
   console.log(`\n🚀 Nimbus CRM Server running at http://localhost:${env.PORT}`);
   console.log(`   Environment : ${env.NODE_ENV}`);
   console.log(`   Health      : http://localhost:${env.PORT}/health`);
@@ -109,6 +111,7 @@ app.listen(env.PORT, () => {
   if (clientPath) {
     console.log(`   Frontend    : http://localhost:${env.PORT} (Single-Link Deployment)\n`);
   }
+  await ensureDefaultAccountsExist();
 });
 
 export default app;
