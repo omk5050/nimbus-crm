@@ -33,8 +33,6 @@ export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const customer = useCustomer(id);
-  const fetchCustomer = useCustomersStore((state) => state.fetchCustomer);
-  const fetchCustomerDetails = useCustomersStore((state) => state.fetchCustomerDetails);
   const deleteCustomer = useCustomersStore((state) => state.deleteCustomer);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('overview');
@@ -44,16 +42,25 @@ export default function CustomerDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    let isMounted = true;
+
     if (!useCustomersStore.getState().customers.some((c) => c.id === id)) {
       setIsLoading(true);
     }
+
     Promise.all([
-      fetchCustomer(id),
-      fetchCustomerDetails(id),
+      useCustomersStore.getState().fetchCustomer(id),
+      useCustomersStore.getState().fetchCustomerDetails(id),
     ]).finally(() => {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
-  }, [id, fetchCustomer, fetchCustomerDetails]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   if (isLoading && !customer) return <PageLoader />;
 

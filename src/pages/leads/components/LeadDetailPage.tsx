@@ -24,8 +24,6 @@ export default function LeadDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lead = useLead(id);
-  const fetchLead = useLeadsStore((state) => state.fetchLead);
-  const fetchLeadActivity = useLeadsStore((state) => state.fetchLeadActivity);
   const moveStage = useLeadsStore((state) => state.moveStage);
   const assignOwner = useLeadsStore((state) => state.assignOwner);
   const deleteLead = useLeadsStore((state) => state.deleteLead);
@@ -37,16 +35,25 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    let isMounted = true;
+
     if (!useLeadsStore.getState().leads.some((l) => l.id === id)) {
       setIsLoading(true);
     }
+
     Promise.all([
-      fetchLead(id),
-      fetchLeadActivity(id),
+      useLeadsStore.getState().fetchLead(id),
+      useLeadsStore.getState().fetchLeadActivity(id),
     ]).finally(() => {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
-  }, [id, fetchLead, fetchLeadActivity]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   if (isLoading && !lead) return <PageLoader />;
 

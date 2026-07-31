@@ -32,8 +32,6 @@ export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const employee = useEmployee(id);
-  const fetchEmployee = useEmployeesStore((state) => state.fetchEmployee);
-  const fetchEmployeeDetails = useEmployeesStore((state) => state.fetchEmployeeDetails);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
 
   const [activeTab, setActiveTab] = useState<DetailTab>('profile');
@@ -43,16 +41,25 @@ export default function EmployeeDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    let isMounted = true;
+
     if (!useEmployeesStore.getState().employees.some((e) => e.id === id)) {
       setIsLoading(true);
     }
+
     Promise.all([
-      fetchEmployee(id),
-      fetchEmployeeDetails(id),
+      useEmployeesStore.getState().fetchEmployee(id),
+      useEmployeesStore.getState().fetchEmployeeDetails(id),
     ]).finally(() => {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     });
-  }, [id, fetchEmployee, fetchEmployeeDetails]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
   if (isLoading && !employee) return <PageLoader />;
 
