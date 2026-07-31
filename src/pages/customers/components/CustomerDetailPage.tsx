@@ -44,7 +44,7 @@ export default function CustomerDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    if (!useCustomer(id)) {
+    if (!useCustomersStore.getState().customers.some((c) => c.id === id)) {
       setIsLoading(true);
     }
     Promise.all([

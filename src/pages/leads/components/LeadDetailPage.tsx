@@ -37,7 +37,7 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    if (!useLead(id)) {
+    if (!useLeadsStore.getState().leads.some((l) => l.id === id)) {
       setIsLoading(true);
     }
     Promise.all([

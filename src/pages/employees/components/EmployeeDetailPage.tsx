@@ -43,7 +43,7 @@ export default function EmployeeDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    if (!useEmployee(id)) {
+    if (!useEmployeesStore.getState().employees.some((e) => e.id === id)) {
       setIsLoading(true);
     }
     Promise.all([
