@@ -27,7 +27,6 @@ export default function CustomerListPage() {
 
   const customers = useCustomersStore((state) => state.customers);
   const isLoading = useCustomersStore((state) => state.isLoading);
-  const fetchCustomers = useCustomersStore((state) => state.fetchCustomers);
   const deleteCustomer = useCustomersStore((state) => state.deleteCustomer);
 
   const [statusFilter, setStatusFilter] = useState<CustomerStatus[]>([]);
@@ -37,8 +36,8 @@ export default function CustomerListPage() {
 
   // Fetch customers from API on mount
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    useCustomersStore.getState().fetchCustomers();
+  }, []);
 
   // Lets the Dashboard's "Add Customer" quick action deep-link straight into this drawer.
   useEffect(() => {

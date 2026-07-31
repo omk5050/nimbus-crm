@@ -31,7 +31,6 @@ export default function LeadListPage() {
 
   const leads = useLeadsStore((state) => state.leads);
   const isLoading = useLeadsStore((state) => state.isLoading);
-  const fetchLeads = useLeadsStore((state) => state.fetchLeads);
   const deleteLead = useLeadsStore((state) => state.deleteLead);
 
   const [view, setView] = useState<ViewMode>('kanban');
@@ -42,8 +41,8 @@ export default function LeadListPage() {
 
   // Fetch leads from API on mount
   useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+    useLeadsStore.getState().fetchLeads();
+  }, []);
 
   // Lets the Dashboard's "Create Lead" quick action deep-link straight into this drawer.
   useEffect(() => {

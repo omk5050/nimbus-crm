@@ -25,7 +25,6 @@ export default function EmployeeListPage() {
   const navigate = useNavigate();
   const employees = useEmployeesStore((state) => state.employees);
   const isLoading = useEmployeesStore((state) => state.isLoading);
-  const fetchEmployees = useEmployeesStore((state) => state.fetchEmployees);
   const deleteEmployee = useEmployeesStore((state) => state.deleteEmployee);
 
   const [departmentFilter, setDepartmentFilter] = useState<Department[]>([]);
@@ -35,8 +34,8 @@ export default function EmployeeListPage() {
 
   // Fetch employees from API on mount
   useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
+    useEmployeesStore.getState().fetchEmployees();
+  }, []);
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
