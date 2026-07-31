@@ -10,7 +10,8 @@ import { TIMEZONE_OPTIONS } from '@/constants/settings.constants';
 
 interface CompanyProfileFormProps {
   defaultValues: CompanyProfileFormValues;
-  onSubmit: (values: CompanyProfileFormValues) => void;
+  /** Called with the form values and a resetForm callback to re-disable Save after success. */
+  onSubmit: (values: CompanyProfileFormValues, resetForm: () => void) => void | Promise<void>;
 }
 
 export function CompanyProfileForm({ defaultValues, onSubmit }: CompanyProfileFormProps) {
@@ -18,14 +19,19 @@ export function CompanyProfileForm({ defaultValues, onSubmit }: CompanyProfileFo
     register,
     handleSubmit,
     control,
-    formState: { errors, isDirty },
+    reset,
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<CompanyProfileFormValues>({
     resolver: zodResolver(companyProfileFormSchema),
     defaultValues,
   });
 
+  function handleFormSubmit(values: CompanyProfileFormValues) {
+    return onSubmit(values, () => reset(values));
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} noValidate className="flex flex-col gap-4">
       <TextField label="Company name" error={errors.name?.message} {...register('name')} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -54,9 +60,10 @@ export function CompanyProfileForm({ defaultValues, onSubmit }: CompanyProfileFo
         )}
       />
 
-      <Button type="submit" className="self-start" disabled={!isDirty}>
+      <Button type="submit" className="self-start" disabled={!isDirty || isSubmitting} isLoading={isSubmitting}>
         Save changes
       </Button>
     </form>
   );
 }
+

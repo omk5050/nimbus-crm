@@ -16,9 +16,18 @@ export default function CompanyProfilePage() {
   const company = useCompanyStore((state) => state.company);
   const updateCompany = useCompanyStore((state) => state.updateCompany);
 
-  function handleSubmit(values: CompanyProfileFormValues) {
-    updateCompany(values);
-    toast.success('Company profile updated');
+  async function handleSubmit(values: CompanyProfileFormValues, resetForm: () => void) {
+    try {
+      await updateCompany(values);
+      resetForm();
+      toast.success('Company profile saved', {
+        description: `"${values.name}" is now live across the workspace.`,
+      });
+    } catch {
+      toast.error('Could not save profile', {
+        description: 'Your changes were reverted. Please try again.',
+      });
+    }
   }
 
   return (
@@ -31,7 +40,7 @@ export default function CompanyProfilePage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge tone="info">{PLAN_LABEL[company.plan]}</Badge>
+          <Badge tone="info">{PLAN_LABEL[company.plan] ?? company.plan}</Badge>
           <Button
             variant="secondary"
             size="sm"
@@ -44,8 +53,12 @@ export default function CompanyProfilePage() {
 
       <Card>
         <CardHeader title="Company details" description="Shown on quotes, invoices, and across the workspace." />
+        {/*
+          key={company.id || company.name} re-mounts the form whenever the
+          server data first loads so defaultValues are applied fresh.
+        */}
         <CompanyProfileForm
-          key={company.id}
+          key={`${company.id}-${company.name}`}
           defaultValues={{
             name: company.name,
             industry: company.industry,
@@ -59,3 +72,4 @@ export default function CompanyProfilePage() {
     </div>
   );
 }
+
