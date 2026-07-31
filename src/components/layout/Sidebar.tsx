@@ -28,6 +28,7 @@ export function Sidebar({
   onNavigate,
   onToggleCollapse,
 }: SidebarProps) {
+  const company = useCompanyStore((state) => state.company);
   const canViewCustomers = useHasPermission('customers', 'view');
   const canViewLeads = useHasPermission('leads', 'view');
   const canViewSales = useHasPermission('sales', 'view');
