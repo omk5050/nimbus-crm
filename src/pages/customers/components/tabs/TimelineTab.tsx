@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Card } from '@/components/cards/Card';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useCustomersStore } from '@/store/customers.store';
-import type { CustomerTimelineEventType } from '@/types/customer.types';
+import type { CustomerTimelineEvent, CustomerTimelineEventType } from '@/types/customer.types';
 import { formatDateTime, formatRelativeTime } from '@/utils/format';
 
 interface TimelineTabProps {
@@ -20,8 +20,10 @@ const EVENT_ICON: Record<CustomerTimelineEventType, LucideIcon> = {
   deal: Briefcase,
 };
 
+const EMPTY_EVENTS: CustomerTimelineEvent[] = [];
+
 export function TimelineTab({ customerId }: TimelineTabProps) {
-  const events = useCustomersStore((state) => state.timelineByCustomerId[customerId] ?? []);
+  const events = useCustomersStore((state) => state.timelineByCustomerId[customerId] ?? EMPTY_EVENTS);
 
   if (events.length === 0) {
     return <EmptyState icon={Clock} title="No activity yet" />;

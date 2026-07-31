@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Card } from '@/components/cards/Card';
 import { Button } from '@/components/buttons/Button';
 import { EmptyState } from '@/components/common/EmptyState';
-import type { CustomerFileType } from '@/types/customer.types';
+import type { CustomerFile, CustomerFileType } from '@/types/customer.types';
 import { useCustomersStore } from '@/store/customers.store';
 import { toast } from '@/store/toast.store';
 import { formatDate } from '@/utils/format';
@@ -20,8 +20,10 @@ const FILE_ICON: Record<CustomerFileType, LucideIcon> = {
   other: File,
 };
 
+const EMPTY_FILES: CustomerFile[] = [];
+
 export function FilesTab({ customerId }: FilesTabProps) {
-  const files = useCustomersStore((state) => state.filesByCustomerId[customerId] ?? []);
+  const files = useCustomersStore((state) => state.filesByCustomerId[customerId] ?? EMPTY_FILES);
 
   return (
     <div className="flex flex-col gap-4">

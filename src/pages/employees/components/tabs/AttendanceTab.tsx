@@ -4,6 +4,7 @@ import { Button } from '@/components/buttons/Button';
 import { StatusBadge } from '@/components/badges/StatusBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useEmployeesStore } from '@/store/employees.store';
+import type { AttendanceRecord } from '@/types/employee.types';
 import { ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_TONE } from '@/constants/employee.constants';
 import { formatDate } from '@/utils/format';
 
@@ -12,9 +13,10 @@ interface AttendanceTabProps {
 }
 
 const TODAY_ISO = new Date().toISOString().slice(0, 10);
+const EMPTY_RECORDS: AttendanceRecord[] = [];
 
 export function AttendanceTab({ employeeId }: AttendanceTabProps) {
-  const records = useEmployeesStore((state) => state.attendanceByEmployeeId[employeeId] ?? []);
+  const records = useEmployeesStore((state) => state.attendanceByEmployeeId[employeeId] ?? EMPTY_RECORDS);
   const toggleTodayAttendance = useEmployeesStore((state) => state.toggleTodayAttendance);
 
   const todayRecord = records.find((record) => record.date === TODAY_ISO);

@@ -6,14 +6,17 @@ import { Textarea } from '@/components/inputs/Textarea';
 import { Button } from '@/components/buttons/Button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useCustomersStore } from '@/store/customers.store';
+import type { CustomerNote } from '@/types/customer.types';
 import { formatRelativeTime } from '@/utils/format';
 
 interface NotesTabProps {
   customerId: string;
 }
 
+const EMPTY_NOTES: CustomerNote[] = [];
+
 export function NotesTab({ customerId }: NotesTabProps) {
-  const notes = useCustomersStore((state) => state.notesByCustomerId[customerId] ?? []);
+  const notes = useCustomersStore((state) => state.notesByCustomerId[customerId] ?? EMPTY_NOTES);
   const addNote = useCustomersStore((state) => state.addNote);
   const [draft, setDraft] = useState('');
 

@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Card } from '@/components/cards/Card';
 import { EmptyState } from '@/components/common/EmptyState';
 import { useLeadsStore } from '@/store/leads.store';
-import type { LeadActivityType } from '@/types/lead.types';
+import type { LeadActivity, LeadActivityType } from '@/types/lead.types';
 import { formatDateTime, formatRelativeTime } from '@/utils/format';
 
 interface LeadActivityTimelineProps {
@@ -22,8 +22,10 @@ const ACTIVITY_ICON: Record<LeadActivityType, LucideIcon> = {
   note: FileText,
 };
 
+const EMPTY_ACTIVITY: LeadActivity[] = [];
+
 export function LeadActivityTimeline({ leadId }: LeadActivityTimelineProps) {
-  const events = useLeadsStore((state) => state.activityByLeadId[leadId] ?? []);
+  const events = useLeadsStore((state) => state.activityByLeadId[leadId] ?? EMPTY_ACTIVITY);
 
   if (events.length === 0) {
     return <EmptyState icon={Clock} title="No activity yet" />;
