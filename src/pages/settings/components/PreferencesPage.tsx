@@ -20,6 +20,8 @@ const THEME_ICON: Record<ThemePreference, typeof Sun> = {
   system: Monitor,
 };
 
+import { toast } from '@/store/toast.store';
+
 export default function PreferencesPage() {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
@@ -75,7 +77,12 @@ export default function PreferencesPage() {
         <RadioGroup
           label="Table density"
           value={preferences.density}
-          onChange={preferences.setDensity}
+          onChange={(val) => {
+            preferences.setDensity(val);
+            toast.success('Display density updated', {
+              description: `Tables are now using ${val} padding.`,
+            });
+          }}
           options={DENSITY_OPTIONS}
           direction="row"
         />
@@ -83,7 +90,12 @@ export default function PreferencesPage() {
           <Select
             label="Date format"
             value={preferences.dateFormat}
-            onChange={preferences.setDateFormat}
+            onChange={(val) => {
+              preferences.setDateFormat(val);
+              toast.success('Date format updated', {
+                description: `Dates are now formatted as ${val === 'DMY' ? 'DD/MM/YYYY' : 'MM/DD/YYYY'}.`,
+              });
+            }}
             options={DATE_FORMAT_OPTIONS}
           />
         </div>

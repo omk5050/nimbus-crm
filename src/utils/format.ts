@@ -42,27 +42,50 @@ export function formatSignedPercent(value: number): string {
   return `${value >= 0 ? '+' : ''}${value}%`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
+import { usePreferencesStore } from '@/store/preferences.store';
+
+function parseDate(iso?: string | null): Date | null {
+  if (!iso) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const date = new Date(iso);
+  return isNaN(date.getTime()) ? null : date;
+}
 
 export function formatDate(iso?: string | null): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return dateFormatter.format(d);
+  const d = parseDate(iso);
+  if (!d) return '—';
+
+  const format = usePreferencesStore.getState().dateFormat;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  if (format === 'DMY') {
+    return `${day}/${month}/${year}`;
+  }
+  return `${month}/${day}/${year}`;
 }
 
 export function formatDateTime(iso?: string | null): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '—';
-  return dateTimeFormatter.format(d);
+  const d = parseDate(iso);
+  if (!d) return '—';
+
+  const format = usePreferencesStore.getState().dateFormat;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  let hours = d.getHours();
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+
+  const dateStr = format === 'DMY' ? `${day}/${month}/${year}` : `${month}/${day}/${year}`;
+  return `${dateStr}, ${hours}:${minutes} ${ampm}`;
 }
 
 /** "3h ago", "12m ago", "Yesterday", falling back to a short date beyond 6 days. */

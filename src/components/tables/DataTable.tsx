@@ -53,6 +53,8 @@ const ALIGN_CLASSES: Record<NonNullable<DataTableColumn<unknown>['align']>, stri
   right: 'text-right',
 };
 
+import { usePreferencesStore } from '@/store/preferences.store';
+
 export function DataTable<T>({
   data,
   columns,
@@ -67,6 +69,14 @@ export function DataTable<T>({
   toolbarExtra,
   className,
 }: DataTableProps<T>) {
+  const density = usePreferencesStore((state) => state.density);
+  // Subscribing to dateFormat ensures cells with dates re-render on preference change
+  usePreferencesStore((state) => state.dateFormat);
+
+  const isCompact = density === 'compact';
+  const headerCellPadding = isCompact ? 'px-3 py-2' : 'px-4 py-3';
+  const bodyCellPadding = isCompact ? 'px-3 py-2 text-xs sm:text-sm' : 'px-4 py-3.5';
+
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<{ columnId: string; direction: SortDirection } | null>(null);
   const [page, setPage] = useState(1);
@@ -199,7 +209,8 @@ export function DataTable<T>({
                     key={column.id}
                     scope="col"
                     className={cn(
-                      'whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                      'whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                      headerCellPadding,
                       ALIGN_CLASSES[align],
                     )}
                   >
@@ -229,7 +240,7 @@ export function DataTable<T>({
                   </th>
                 );
               })}
-              {rowActions && <th scope="col" className="w-12 px-4 py-3" />}
+              {rowActions && <th scope="col" className={cn('w-12', headerCellPadding)} />}
             </tr>
           </thead>
 
@@ -238,12 +249,12 @@ export function DataTable<T>({
               Array.from({ length: Math.min(pageSize, 5) }).map((_, rowIndex) => (
                 <tr key={rowIndex}>
                   {visibleColumns.map((column) => (
-                    <td key={column.id} className="px-4 py-3.5">
+                    <td key={column.id} className={cn(bodyCellPadding)}>
                       <Skeleton className="h-4 w-full max-w-32" />
                     </td>
                   ))}
                   {rowActions && (
-                    <td className="px-4 py-3.5">
+                    <td className={cn(bodyCellPadding)}>
                       <Skeleton className="h-4 w-4" />
                     </td>
                   )}
@@ -278,7 +289,8 @@ export function DataTable<T>({
                       <td
                         key={column.id}
                         className={cn(
-                          'px-4 py-3.5 text-foreground',
+                          'text-foreground',
+                          bodyCellPadding,
                           ALIGN_CLASSES[column.align ?? 'left'],
                           column.className,
                         )}
@@ -288,7 +300,7 @@ export function DataTable<T>({
                     ))}
                     {rowActions && (
                       <td
-                        className="px-4 py-3.5 text-right"
+                        className={cn('text-right', bodyCellPadding)}
                         onClick={(event) => event.stopPropagation()}
                       >
                         <ActionMenu items={rowActions(row)} />
