@@ -40,6 +40,22 @@ export const useAuthStore = create<AuthState>()(
             localStorage.setItem('nimbus_access_token', token);
           }
 
+          if (values.rememberMe && user) {
+            const remembered = {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+              title: user.title,
+              avatarUrl: user.avatarUrl,
+            };
+            localStorage.setItem('nimbus_remembered_account', JSON.stringify(remembered));
+            localStorage.setItem('nimbus_remembered_email', user.email);
+          } else if (!values.rememberMe) {
+            localStorage.removeItem('nimbus_remembered_account');
+            localStorage.removeItem('nimbus_remembered_email');
+          }
+
           set({ isAuthenticated: true, user, isSubmitting: false, error: null });
         } catch (error: any) {
           console.timeEnd('login');
