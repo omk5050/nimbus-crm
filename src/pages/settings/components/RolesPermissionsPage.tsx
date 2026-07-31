@@ -88,8 +88,8 @@ export default function RolesPermissionsPage() {
                   {PERMISSION_ACTIONS.map((action) => (
                     <td key={action} className="px-5 py-3 text-center">
                       <Checkbox
-                        checked={rolePermissions[selectedRole][module][action]}
-                        onChange={() => togglePermission(selectedRole, module, action)}
+                        checked={isAdmin ? true : Boolean(rolePermissions[selectedRole]?.[module]?.[action])}
+                        onChange={() => !isAdmin && togglePermission(selectedRole, module, action)}
                         disabled={isAdmin}
                         aria-label={`${PERMISSION_ACTION_LABEL[action]} ${PERMISSION_MODULE_LABEL[module]}`}
                       />

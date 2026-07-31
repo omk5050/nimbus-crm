@@ -4,6 +4,7 @@ import { APP_NAME } from '@/constants/app.constants';
 import { SidebarNavItem } from '@/components/layout/SidebarNavItem';
 import { IconButton } from '@/components/buttons/IconButton';
 import { useCompanyStore } from '@/store/company.store';
+import { useHasPermission } from '@/hooks/usePermissions';
 import { cn } from '@/utils/cn';
 import logoMark from '@/assets/logo-mark.svg';
 
@@ -27,7 +28,24 @@ export function Sidebar({
   onNavigate,
   onToggleCollapse,
 }: SidebarProps) {
-  const company = useCompanyStore((state) => state.company);
+  const canViewCustomers = useHasPermission('customers', 'view');
+  const canViewLeads = useHasPermission('leads', 'view');
+  const canViewSales = useHasPermission('sales', 'view');
+  const canViewTasks = useHasPermission('tasks', 'view');
+  const canViewEmployees = useHasPermission('employees', 'view');
+  const canViewReports = useHasPermission('reports', 'view');
+  const canViewSettings = useHasPermission('settings', 'view');
+
+  const visibleNav = PRIMARY_NAV.filter((item) => {
+    if (item.id === 'customers') return canViewCustomers;
+    if (item.id === 'leads') return canViewLeads;
+    if (item.id === 'sales') return canViewSales;
+    if (item.id === 'tasks') return canViewTasks;
+    if (item.id === 'employees') return canViewEmployees;
+    if (item.id === 'reports') return canViewReports;
+    if (item.id === 'settings') return canViewSettings;
+    return true;
+  });
 
   return (
     <div className="flex h-full w-full flex-col bg-brand-950 text-brand-100">
@@ -48,7 +66,7 @@ export function Sidebar({
 
       {/* Nav list */}
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {PRIMARY_NAV.map((item) => (
+        {visibleNav.map((item) => (
           <SidebarNavItem key={item.id} item={item} collapsed={collapsed} onNavigate={onNavigate} />
         ))}
       </nav>
