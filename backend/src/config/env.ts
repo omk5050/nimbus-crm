@@ -19,6 +19,7 @@ const envSchema = z.object({
 
   // Optional email config
   RESEND_API_KEY: z.string().optional(),
+  CONTACT_FROM_EMAIL: z.string().optional(),
   CONTACT_FROM_KEYS: z.string().optional(),
   FROM_EMAIL: z.string().optional(),
   SMTP_HOST: z.string().optional(),

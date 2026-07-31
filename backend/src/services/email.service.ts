@@ -12,7 +12,7 @@ interface SendOtpEmailOptions {
  */
 export async function sendOtpEmail({ to, name, otp }: SendOtpEmailOptions): Promise<void> {
   const resendApiKey = process.env.RESEND_API_KEY || env.RESEND_API_KEY;
-  const fromEmail = process.env.FROM_EMAIL || process.env.CONTACT_FROM_KEYS || env.EMAIL_FROM || 'Nimbus CRM <onboarding@resend.dev>';
+  const fromEmail = process.env.CONTACT_FROM_EMAIL || process.env.FROM_EMAIL || process.env.CONTACT_FROM_KEYS || env.EMAIL_FROM || 'onboarding@resend.dev';
 
   const htmlContent = `
     <!DOCTYPE html>
