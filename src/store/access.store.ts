@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { UserRole } from '@/types/auth.types';
 import type { PermissionAction, PermissionModule, RolePermissions, UserAccess } from '@/types/settings.types';
 import { DEFAULT_ROLE_PERMISSIONS } from '@/constants/settings.constants';
@@ -33,72 +35,80 @@ interface AccessState {
   toggleUserAccess: (employeeId: string) => void;
 }
 
-export const useAccessStore = create<AccessState>()((set) => ({
-  rolePermissions: DEFAULT_ROLE_PERMISSIONS,
-  userAccessByEmployeeId: INITIAL_USER_ACCESS,
+export const useAccessStore = create<AccessState>()(
+  persist(
+    (set) => ({
+      rolePermissions: DEFAULT_ROLE_PERMISSIONS,
+      userAccessByEmployeeId: INITIAL_USER_ACCESS,
 
-  togglePermission: (role, module, action) => {
-    set((state) => ({
-      rolePermissions: {
-        ...state.rolePermissions,
-        [role]: {
-          ...state.rolePermissions[role],
-          [module]: {
-            ...state.rolePermissions[role][module],
-            [action]: !state.rolePermissions[role][module][action],
+      togglePermission: (role, module, action) => {
+        set((state) => ({
+          rolePermissions: {
+            ...state.rolePermissions,
+            [role]: {
+              ...state.rolePermissions[role],
+              [module]: {
+                ...state.rolePermissions[role][module],
+                [action]: !state.rolePermissions[role][module][action],
+              },
+            },
           },
-        },
+        }));
       },
-    }));
-  },
 
-  setUserRole: (employeeId, role) => {
-    set((state) => ({
-      userAccessByEmployeeId: {
-        ...state.userAccessByEmployeeId,
-        [employeeId]: { ...state.userAccessByEmployeeId[employeeId], employeeId, role },
-      },
-    }));
-  },
-
-  toggleUserAccess: (employeeId) => {
-    set((state) => {
-      const current = state.userAccessByEmployeeId[employeeId];
-      return {
-        userAccessByEmployeeId: {
-          ...state.userAccessByEmployeeId,
-          [employeeId]: {
-            ...current,
-            employeeId,
-            hasAccess: !(current?.hasAccess ?? true),
+      setUserRole: (employeeId, role) => {
+        set((state) => ({
+          userAccessByEmployeeId: {
+            ...state.userAccessByEmployeeId,
+            [employeeId]: { ...state.userAccessByEmployeeId[employeeId], employeeId, role },
           },
-        },
-      };
-    });
-  },
-}));
+        }));
+      },
+
+      toggleUserAccess: (employeeId) => {
+        set((state) => {
+          const current = state.userAccessByEmployeeId[employeeId];
+          return {
+            userAccessByEmployeeId: {
+              ...state.userAccessByEmployeeId,
+              [employeeId]: {
+                ...current,
+                employeeId,
+                hasAccess: !(current?.hasAccess ?? true),
+              },
+            },
+          };
+        });
+      },
+    }),
+    { name: 'nimbus-access' },
+  ),
+);
 
 /** Count of users currently assigned a given role, for the Roles overview cards. */
 export function useRoleUserCount(role: UserRole): number {
-  return useAccessStore(
-    (state) => Object.values(state.userAccessByEmployeeId).filter((entry) => entry.role === role).length,
+  const userAccessMap = useAccessStore((state) => state.userAccessByEmployeeId);
+  return useMemo(
+    () => Object.values(userAccessMap).filter((entry) => entry.role === role).length,
+    [userAccessMap, role],
   );
 }
 
 /**
- * Safe accessor for a single employee's access record. Employees added via
- * the Employees module after this store initialized won't have a seeded
- * record yet — this returns a sensible computed default in that case
- * instead of `undefined`, without persisting anything until the user
- * actually changes their role or access.
+ * Safe accessor for a single employee's access record. Uses useMemo to guarantee
+ * a stable reference when a user has no custom record yet, avoiding getSnapshot
+ * infinite update depth crashes.
  */
 export function useUserAccessFor(employeeId: string, department: string): UserAccess {
-  return useAccessStore(
-    (state) =>
-      state.userAccessByEmployeeId[employeeId] ?? {
+  const rawAccess = useAccessStore((state) => state.userAccessByEmployeeId[employeeId]);
+  return useMemo(
+    () =>
+      rawAccess ?? {
         employeeId,
         role: defaultRoleFor(department),
         hasAccess: true,
       },
+    [rawAccess, employeeId, department],
   );
 }
+
