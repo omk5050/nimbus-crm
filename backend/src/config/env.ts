@@ -18,6 +18,9 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 
   // Optional email config
+  RESEND_API_KEY: z.string().optional(),
+  CONTACT_FROM_KEYS: z.string().optional(),
+  FROM_EMAIL: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),

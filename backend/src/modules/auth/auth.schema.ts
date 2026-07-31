@@ -10,8 +10,14 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
+export const verifyOtpSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  otp: z.string().length(6, 'OTP must be exactly 6 digits'),
+});
+
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
+  email: z.string().email('Invalid email address'),
+  otp: z.string().min(1, 'OTP code is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -25,5 +31,6 @@ export const refreshSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;

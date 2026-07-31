@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import * as authService from './auth.service';
-import { loginSchema, forgotPasswordSchema, resetPasswordSchema, refreshSchema } from './auth.schema';
+import { loginSchema, forgotPasswordSchema, verifyOtpSchema, resetPasswordSchema, refreshSchema } from './auth.schema';
 
 export async function login(req: Request, res: Response) {
   const input = loginSchema.parse(req.body);
@@ -21,15 +21,20 @@ export async function refresh(req: Request, res: Response) {
 
 export async function forgotPassword(req: Request, res: Response) {
   const input = forgotPasswordSchema.parse(req.body);
-  await authService.forgotPassword(input);
-  // Always respond 200 to prevent email enumeration
-  res.json({ message: 'If that email is registered, a reset link has been sent' });
+  const result = await authService.forgotPassword(input);
+  res.json(result);
+}
+
+export async function verifyOtp(req: Request, res: Response) {
+  const input = verifyOtpSchema.parse(req.body);
+  const result = await authService.verifyOtp(input);
+  res.json(result);
 }
 
 export async function resetPassword(req: Request, res: Response) {
   const input = resetPasswordSchema.parse(req.body);
-  await authService.resetPassword(input);
-  res.json({ message: 'Password updated successfully' });
+  const result = await authService.resetPassword(input);
+  res.json(result);
 }
 
 export async function getMe(req: Request, res: Response) {

@@ -5,7 +5,8 @@ import { env } from '@/config/env';
 import { prisma } from '@/config/prisma';
 import { AppError } from '@/middleware/error.middleware';
 import type { AuthPayload } from '@/middleware/auth.middleware';
-import type { LoginInput, ForgotPasswordInput, ResetPasswordInput } from './auth.schema';
+import { sendOtpEmail } from '@/services/email.service';
+import type { LoginInput, ForgotPasswordInput, VerifyOtpInput, ResetPasswordInput } from './auth.schema';
 
 const SALT_ROUNDS = 10;
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
@@ -119,34 +120,69 @@ export async function refresh(refreshToken: string) {
   return { accessToken: newAccessToken, refreshToken: newRefreshToken };
 }
 
+
+
 export async function forgotPassword(input: ForgotPasswordInput) {
+  const cleanEmail = input.email.trim().toLowerCase();
   const user = await prisma.user.findFirst({
-    where: { employee: { email: { equals: input.email.trim().toLowerCase(), mode: 'insensitive' } } },
-    include: { employee: { select: { email: true } } },
+    where: { employee: { email: { equals: cleanEmail, mode: 'insensitive' } } },
+    include: { employee: { select: { name: true, email: true } } },
   });
 
-  if (!user) return;
+  if (!user) {
+    throw new AppError(404, 'ACCOUNT_NOT_FOUND', 'This email is not associated with any account');
+  }
 
-  const resetToken = crypto.randomBytes(32).toString('hex');
+  // Generate 6-digit OTP code
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const resetTokenExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      resetToken,
-      resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      resetToken: otpCode,
+      resetTokenExpiresAt,
     },
   });
+
+  await sendOtpEmail({
+    to: user.employee.email,
+    name: user.employee.name,
+    otp: otpCode,
+  });
+
+  return { message: 'OTP verification code sent to your email address' };
 }
 
-export async function resetPassword(input: ResetPasswordInput) {
+export async function verifyOtp(input: VerifyOtpInput) {
+  const cleanEmail = input.email.trim().toLowerCase();
   const user = await prisma.user.findFirst({
     where: {
-      resetToken: input.token,
+      employee: { email: { equals: cleanEmail, mode: 'insensitive' } },
+      resetToken: input.otp.trim(),
       resetTokenExpiresAt: { gt: new Date() },
     },
   });
 
   if (!user) {
-    throw new AppError(400, 'INVALID_TOKEN', 'Reset token is invalid or has expired');
+    throw new AppError(400, 'INVALID_OTP', 'The verification code is invalid or has expired');
+  }
+
+  return { valid: true };
+}
+
+export async function resetPassword(input: ResetPasswordInput) {
+  const cleanEmail = input.email.trim().toLowerCase();
+  const user = await prisma.user.findFirst({
+    where: {
+      employee: { email: { equals: cleanEmail, mode: 'insensitive' } },
+      resetToken: input.otp.trim(),
+      resetTokenExpiresAt: { gt: new Date() },
+    },
+  });
+
+  if (!user) {
+    throw new AppError(400, 'INVALID_OTP', 'The verification code is invalid or has expired');
   }
 
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
@@ -159,6 +195,8 @@ export async function resetPassword(input: ResetPasswordInput) {
       refreshTokenHash: null,
     },
   });
+
+  return { message: 'Password updated successfully' };
 }
 
 export async function getMe(userId: string) {

@@ -8,6 +8,7 @@ const router = Router();
 router.post('/login', controller.login);
 router.post('/refresh', controller.refresh);
 router.post('/forgot-password', controller.forgotPassword);
+router.post('/verify-otp', controller.verifyOtp);
 router.post('/reset-password', controller.resetPassword);
 
 // Protected routes

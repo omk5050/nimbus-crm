@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router';
-import { ArrowLeft, MailCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { AlertCircle, ArrowLeft, KeyRound, MailCheck } from 'lucide-react';
 import { forgotPasswordSchema } from '@/pages/auth/auth.schemas';
 import type { ForgotPasswordFormValues } from '@/types/auth.types';
 import { TextField } from '@/components/inputs/TextField';
 import { Button } from '@/components/buttons/Button';
 import { ROUTES } from '@/constants/routes.constants';
-
-const MOCK_DELAY_MS = 600;
+import { apiClient } from '@/services/api.client';
 
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -24,8 +25,22 @@ export default function ForgotPasswordPage() {
   });
 
   async function onSubmit(values: ForgotPasswordFormValues) {
-    await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
-    setSentTo(values.email);
+    setErrorMessage(null);
+    const cleanEmail = values.email.trim();
+
+    try {
+      await apiClient.post('/auth/forgot-password', { email: cleanEmail });
+      setSentTo(cleanEmail);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data?.error;
+      if (err.response?.status === 404 || msg?.toLowerCase().includes('not associated') || msg?.toLowerCase().includes('not found')) {
+        setErrorMessage('This email is not associated with any account.');
+      } else if (msg) {
+        setErrorMessage(msg);
+      } else {
+        setErrorMessage('Failed to send reset code. Please verify your connection or try again.');
+      }
+    }
   }
 
   if (sentTo) {
@@ -38,16 +53,35 @@ export default function ForgotPasswordPage() {
           Check your email
         </h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          If an account exists for <span className="font-medium text-foreground">{sentTo}</span>,
-          we've sent a link to reset the password.
+          We've sent a 6-digit OTP verification code to <span className="font-semibold text-foreground">{sentTo}</span>.
         </p>
-        <Link
-          to={ROUTES.LOGIN}
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+
+        <Button
+          fullWidth
+          className="mt-6 gap-2"
+          onClick={() => navigate(`${ROUTES.RESET_PASSWORD}?email=${encodeURIComponent(sentTo)}`)}
         >
-          <ArrowLeft size={14} />
-          Back to sign in
-        </Link>
+          <KeyRound size={16} />
+          Enter OTP & Reset Password
+        </Button>
+
+        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => setSentTo(null)}
+            className="text-primary hover:underline"
+          >
+            Use a different email
+          </button>
+
+          <Link
+            to={ROUTES.LOGIN}
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            <ArrowLeft size={12} />
+            Back to sign in
+          </Link>
+        </div>
       </div>
     );
   }
@@ -58,10 +92,17 @@ export default function ForgotPasswordPage() {
         Forgot your password?
       </h1>
       <p className="mt-1.5 text-sm text-muted-foreground">
-        Enter the email tied to your workspace and we'll send you a reset link.
+        Enter the email tied to your workspace and we'll send you a 6-digit OTP verification code.
       </p>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-8 flex flex-col gap-4">
+      {errorMessage && (
+        <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 flex flex-col gap-4">
         <TextField
           label="Email"
           type="email"
@@ -72,7 +113,7 @@ export default function ForgotPasswordPage() {
         />
 
         <Button type="submit" fullWidth isLoading={isSubmitting} className="mt-2">
-          Send reset link
+          Send OTP Verification Code
         </Button>
 
         <Link
