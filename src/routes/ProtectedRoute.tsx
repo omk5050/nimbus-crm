@@ -1,16 +1,21 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { useAuthStore } from '@/store/auth.store';
 import { ROUTES } from '@/constants/routes.constants';
+import { PageLoader } from '@/components/common/PageLoader';
 
 /**
- * Placeholder guard for the mock-auth phase: gates on the Zustand auth
- * store's `isAuthenticated` flag rather than a verified session/JWT.
- * Swapping in real auth later means changing what sets that flag, not
- * anything about how routes are guarded.
+ * Guards protected routes behind a verified session.
+ * Shows a full-screen loader while the initial /auth/me check is in-flight
+ * so we never flash protected content or redirect prematurely.
  */
 export function ProtectedRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
   const location = useLocation();
+
+  if (isCheckingAuth) {
+    return <PageLoader />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
@@ -18,3 +23,4 @@ export function ProtectedRoute() {
 
   return <Outlet />;
 }
+

@@ -5,6 +5,7 @@ import { apiClient } from '@/services/api.client';
 
 interface AuthState {
   isAuthenticated: boolean;
+  isCheckingAuth: boolean;
   user: AuthUser | null;
   isSubmitting: boolean;
   error: string | null;
@@ -19,6 +20,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       isAuthenticated: false,
+      isCheckingAuth: true,
       user: null,
       isSubmitting: false,
       error: null,
@@ -57,26 +59,32 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         localStorage.removeItem('nimbus_access_token');
-        set({ isAuthenticated: false, user: null, isSubmitting: false, error: null });
+        set({ isAuthenticated: false, isCheckingAuth: false, user: null, isSubmitting: false, error: null });
       },
 
       fetchMe: async () => {
+        set({ isCheckingAuth: true });
         try {
           const token = localStorage.getItem('nimbus_access_token');
           if (!token) {
-            set({ isAuthenticated: false, user: null, isSubmitting: false });
+            set({ isAuthenticated: false, isCheckingAuth: false, user: null, isSubmitting: false });
             return;
           }
           const res = await apiClient.get('/auth/me');
-          set({ isAuthenticated: true, user: res.data, isSubmitting: false });
+          set({ isAuthenticated: true, isCheckingAuth: false, user: res.data, isSubmitting: false });
         } catch {
           localStorage.removeItem('nimbus_access_token');
-          set({ isAuthenticated: false, user: null, isSubmitting: false });
+          set({ isAuthenticated: false, isCheckingAuth: false, user: null, isSubmitting: false });
         }
       },
     }),
     {
       name: 'nimbus-auth',
+      // Only persist auth identity — not the transient checking flag
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        user: state.user,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state && !localStorage.getItem('nimbus_access_token')) {
           state.isAuthenticated = false;
@@ -87,3 +95,4 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
